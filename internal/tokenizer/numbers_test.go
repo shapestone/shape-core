@@ -1,4 +1,4 @@
-package numbers
+package tokenizer
 
 import (
 	"testing"
@@ -42,7 +42,6 @@ func TestDifference(t *testing.T) {
 
 	// When
 	d := Difference(a, b)
-	//t.Logf("%f", d)
 
 	// Then
 	if d == e {

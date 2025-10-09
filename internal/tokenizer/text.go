@@ -1,27 +1,39 @@
-package text
+package tokenizer
 
 import (
-	"github.com/shapestone/shape/internal/numbers"
 	"regexp"
 	"strings"
 	"unicode/utf8"
 )
 
-// Regex support functions
-var stripMarginGroup = regexp.MustCompile(`(?m)^[ \t]*\|(.*)(?:\n|$)`)
-var stripColumnGroup = regexp.MustCompile(`(?m)^[ \t]*\|(.*)(?:\|[ \t]*\n|\|[ \t]*$)`)
+//
+// Text Utilities - Functions for text manipulation and comparison
+//
 
-// The StripMargin function lets you define multiline strings where each line is prepended with optional whitespace
-// and a pipeline symbol
+// Regex patterns for text processing
+var (
+	stripMarginGroup  = regexp.MustCompile(`(?m)^[ \t]*\|(.*)(?:\n|$)`)
+	stripColumnGroup  = regexp.MustCompile(`(?m)^[ \t]*\|(.*)(?:\|[ \t]*\n|\|[ \t]*$)`)
+	reLastSpace       = regexp.MustCompile(` $`)
+	reLastTab         = regexp.MustCompile(`\t$`)
+	reTrailingWS      = regexp.MustCompile(`[\n\r\t ]*$`)
+	reSpaces          = regexp.MustCompile(`[\t ]$`)
+	reTab             = regexp.MustCompile(`\t`)
+	reSpace           = regexp.MustCompile(` `)
+	reNewline         = regexp.MustCompile(`\n`)
+	reReturn          = regexp.MustCompile(`\r`)
+	reFormFeed        = regexp.MustCompile(`\f`)
+)
+
+// StripMargin lets you define multiline strings where each line is prepended
+// with optional whitespace and a pipeline symbol.
 //
-// Code example:
+// Example:
 //
-// text.StripMargin(`
-//
-//	|<content line 1>
-//	|<content line 2>
-//
-// `)
+//	StripMargin(`
+//	  |line 1
+//	  |line 2
+//	`)
 func StripMargin(s string) string {
 	ms := stripMarginGroup.FindAllStringSubmatch(s, -1)
 	if ms == nil {
@@ -39,17 +51,15 @@ func StripMargin(s string) string {
 	return lines
 }
 
-// The StripColumn function lets you define multiline strings where each line is prepended with optional whitespace
-// and pipeline symbols
+// StripColumn lets you define multiline strings where each line is enclosed
+// by pipeline symbols with optional whitespace.
 //
-// Code example:
+// Example:
 //
-// text.StripColumn(`
-//
-//	|<content line 1>|
-//	|<content line 2>|
-//
-// `)
+//	StripColumn(`
+//	  |line 1|
+//	  |line 2|
+//	`)
 func StripColumn(s string) string {
 	ms := stripColumnGroup.FindAllStringSubmatch(s, -1)
 	if ms == nil {
@@ -67,8 +77,8 @@ func StripColumn(s string) string {
 	return lines
 }
 
-// The Diff function compares two strings and outputs a diff format and a boolean value to indicate if the two strings
-// matched
+// Diff compares two strings and outputs a diff format.
+// Returns the diff string and true if the strings matched.
 func Diff(expected string, actual string) (string, bool) {
 	expectedArr := showTabsArray(strings.Split(expected, "\n"))
 	expectedWidth := len("Expected")
@@ -85,9 +95,9 @@ func Diff(expected string, actual string) (string, bool) {
 			actualWidth = len(s)
 		}
 	}
-	width := numbers.MaxInt(expectedWidth, actualWidth)
+	width := maxInt(expectedWidth, actualWidth)
 
-	minVal := numbers.MinInt(len(expectedArr), len(actualArr))
+	minVal := minInt(len(expectedArr), len(actualArr))
 	var sb strings.Builder
 	status := true
 	sb.WriteString(Pad("Expected", width) + ` | ` + Pad("Actual", width) + "\n")
@@ -123,27 +133,17 @@ func Diff(expected string, actual string) (string, bool) {
 	return sb.String(), status
 }
 
-// The Pad function is a right space padding function
+// Pad performs right space padding on a string to reach the specified length.
 func Pad(str string, length int) string {
 	rc := length - utf8.RuneCountInString(str)
 	return str + strings.Repeat(` `, rc)
 }
 
-var reLastSpace = regexp.MustCompile(` $`)
-var reLastTab = regexp.MustCompile(`\t$`)
-
-// Todo: deprecate?
-func showLastSpace(str string) string {
-	str = reLastSpace.ReplaceAllString(str, "␣")
-	str = reLastTab.ReplaceAllString(str, "␉")
-	return str
-}
-
-// The SpaceDiff function compares two strings and replace invisible whitespaces with symbols that represents them
+// SpaceDiff compares two strings and highlights invisible whitespace differences.
 func SpaceDiff(a, b string) (string, string) {
 	ar := []rune(a)
 	br := []rune(b)
-	sl := numbers.MinInt(len(ar), len(br))
+	sl := minInt(len(ar), len(br))
 	i := 0
 	for ; i < sl; i++ {
 		if ar[i] != br[i] {
@@ -193,10 +193,11 @@ func showInvisible(r rune) rune {
 	}
 }
 
+// StringDiff returns a visual indicator showing where two strings differ.
 func StringDiff(a, b string) string {
 	ar := []rune(a)
 	br := []rune(b)
-	ml := numbers.MinInt(len(ar), len(br))
+	ml := minInt(len(ar), len(br))
 	i := 0
 	for i < ml {
 		if ar[i] != br[i] {
@@ -205,22 +206,6 @@ func StringDiff(a, b string) string {
 		i++
 	}
 	return strings.Repeat(" ", i) + "△"
-}
-
-var reTrailingWS = regexp.MustCompile(`[\n\r\t ]*$`)
-
-var reSpaces = regexp.MustCompile(`[\t ]$`)
-var reTab = regexp.MustCompile(`\t`)
-var reSpace = regexp.MustCompile(` `)
-
-// Todo: deprecate?
-func showAllSpaces(str string) string {
-	if !reSpaces.MatchString(str) {
-		return str
-	}
-	str = reTab.ReplaceAllString(str, "␉")
-	str = reSpace.ReplaceAllString(str, "␣")
-	return str
 }
 
 func showTabsArray(orig []string) []string {
@@ -238,14 +223,7 @@ func showTabs(str string) string {
 	return str
 }
 
-// Todo clean up
-// Shard REs with above function
-var reNewline = regexp.MustCompile(`\n`)
-var reReturn = regexp.MustCompile(`\r`)
-
-// var reTab = regexp.MustCompile(`\t`)
-var reFormFeed = regexp.MustCompile(`\f`)
-
+// Flatten converts whitespace characters to their escaped string representations.
 func Flatten(str string) string {
 	str = strings.Replace(str, `%`, `%%`, -1)
 	str = reNewline.ReplaceAllString(str, `\n`)
@@ -255,14 +233,10 @@ func Flatten(str string) string {
 	return str
 }
 
-// FitString will shorten the input string to the defined string length
-// If the input string is shorter than the defined length then return a padded string
-// If the input string length equals the defined length then return the original string
-// if the input string is shorter than 7 then return the first x number of characters
-// Else return a string "left ... right" containing the beginning of the string plus " ... " plus the end of the string
-// TODO: need tests
-// TODO: Strip "String"
-// TODO: need variations SquashString, no padding only truncation
+// FitString will shorten or pad the input string to the defined length.
+// - If the input string is shorter than the defined length, it returns a padded string.
+// - If the input string length equals the defined length, it returns the original string.
+// - If the input string is longer, it returns "left ... right" format.
 func FitString(str string, length int) string {
 	str = strings.Replace(str, `%`, `%%`, -1)
 	runeStr := []rune(str)
@@ -283,4 +257,44 @@ func FitString(str string, length int) string {
 		return firstPart + ` ... ` + lastPart
 	}
 	return firstPart
+}
+
+//
+// Rune Utilities - Functions for comparing rune slices
+//
+
+// RunesMatch returns true if two rune slices are equal.
+func RunesMatch(a, b []rune) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// RunesNoMatch returns true if two rune slices are not equal.
+func RunesNoMatch(a, b []rune) bool {
+	return !RunesMatch(a, b)
+}
+
+//
+// Helper functions
+//
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

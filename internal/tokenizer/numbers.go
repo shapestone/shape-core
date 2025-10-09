@@ -1,8 +1,13 @@
-package numbers
+package tokenizer
 
 import "math"
 
-// The NearlyEqual function compares two float64 numbers and returns true if they are nearly equal
+//
+// Number Utilities - Functions for numeric operations
+//
+
+// NearlyEqual compares two float64 numbers and returns true if they are nearly equal
+// within the specified epsilon tolerance.
 func NearlyEqual(a float64, b float64, epsilon float64) bool {
 	// already equal?
 	if a == b {
@@ -17,12 +22,12 @@ func NearlyEqual(a float64, b float64, epsilon float64) bool {
 	return diff/(math.Abs(a)+math.Abs(b)) < epsilon
 }
 
-// The Difference function returns the differences between two float64 numbers
+// Difference returns the absolute difference between two float64 numbers.
 func Difference(a float64, b float64) float64 {
 	return math.Abs(a - b)
 }
 
-// The MaxInt function returns the max of two values
+// MaxInt returns the maximum of two integers.
 func MaxInt(a, b int) int {
 	if a > b {
 		return a
@@ -30,7 +35,7 @@ func MaxInt(a, b int) int {
 	return b
 }
 
-// The MinInt function returns the min of two values
+// MinInt returns the minimum of two integers.
 func MinInt(a, b int) int {
 	if a < b {
 		return a
@@ -38,7 +43,7 @@ func MinInt(a, b int) int {
 	return b
 }
 
-// The PowInt function calculates m to the n-th power
+// PowInt calculates m to the n-th power for integers.
 func PowInt(m, n int64) int64 {
 	if n == 0 {
 		return 1

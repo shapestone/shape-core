@@ -1,13 +1,12 @@
-package tokens
+package tokenizer
 
 import (
-	"github.com/shapestone/shape/internal/text"
 	"testing"
 )
 
 func TestStringMatcherShouldReturnAToken(t *testing.T) {
 	// Given
-	tokenizer := NewTokenizer(StringMatcher(`List`, `list`))
+	tokenizer := NewTokenizer(StringMatcherFunc(`List`, `list`))
 	stream := "list"
 
 	// When
@@ -15,12 +14,12 @@ func TestStringMatcherShouldReturnAToken(t *testing.T) {
 	actual := tokenizer.TokenizeToString("\n")
 
 	// Then
-	expected := text.StripMargin(`
+	expected := StripMargin(`
 		|[List: "list"]
 		|[EOS]
 	`)
 
-	diff, tdOk := text.Diff(expected, actual)
+	diff, tdOk := Diff(expected, actual)
 	if !tdOk {
 		t.Fatalf("Tokenization validation error: \n%v", diff)
 	}
