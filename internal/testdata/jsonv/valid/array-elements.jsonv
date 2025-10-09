@@ -1,0 +1,5 @@
+{
+  "tags": [String(1, 30)],
+  "scores": [Integer(0, 100)],
+  "ids": [UUID]
+}
