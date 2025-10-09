@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/shapestone/shape/internal/parser"
+	"github.com/shapestone/shape/internal/parser/csvv"
 	"github.com/shapestone/shape/internal/parser/jsonv"
 	"github.com/shapestone/shape/internal/parser/propsv"
 	"github.com/shapestone/shape/internal/parser/xmlv"
@@ -38,6 +39,8 @@ func newParser(format parser.Format) (parser.Parser, error) {
 		return propsv.NewParser(), nil
 	case parser.FormatXMLV:
 		return xmlv.NewParser(), nil
+	case parser.FormatCSVV:
+		return csvv.NewParser(), nil
 	default:
 		return nil, fmt.Errorf("unsupported format: %v", format)
 	}

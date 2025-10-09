@@ -111,6 +111,49 @@ func TestParse(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:   "CSVV simple",
+			format: parser.FormatCSVV,
+			input: `id,name
+UUID,String`,
+			wantErr: false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				if _, ok := obj.GetProperty("id"); !ok {
+					t.Error("property 'id' not found")
+				}
+				if _, ok := obj.GetProperty("name"); !ok {
+					t.Error("property 'name' not found")
+				}
+			},
+		},
+		{
+			name:   "CSVV with function",
+			format: parser.FormatCSVV,
+			input: `username,age
+String(3,20),Integer(18,120)`,
+			wantErr: false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				username, ok := obj.GetProperty("username")
+				if !ok {
+					t.Fatal("property 'username' not found")
+				}
+				fn, ok := username.(*ast.FunctionNode)
+				if !ok {
+					t.Fatalf("expected FunctionNode, got %T", username)
+				}
+				if fn.Name() != "String" {
+					t.Errorf("fn.Name() = %q, want %q", fn.Name(), "String")
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
