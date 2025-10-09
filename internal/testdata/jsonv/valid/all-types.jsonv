@@ -1,0 +1,15 @@
+{
+  "literalString": "fixed value",
+  "literalNumber": 42,
+  "literalFloat": 3.14,
+  "literalBool": true,
+  "literalNull": null,
+  "typeIdentifier": UUID,
+  "functionBasic": Integer(1, 100),
+  "functionUnbounded": String(5+),
+  "functionEnum": Enum("A", "B", "C"),
+  "nestedObject": {
+    "inner": Email
+  },
+  "arrayType": [ISO-8601]
+}
