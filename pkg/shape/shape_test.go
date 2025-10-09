@@ -77,9 +77,39 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "unsupported format",
+			format:  parser.FormatYAMLV,
+			input:   `user:\n  id: UUID`,
+			wantErr: true,
+		},
+		{
+			name:    "PropsV simple",
+			format:  parser.FormatPropsV,
+			input:   `id=UUID`,
+			wantErr: false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				if _, ok := obj.GetProperty("id"); !ok {
+					t.Error("property 'id' not found")
+				}
+			},
+		},
+		{
+			name:    "XMLV simple",
 			format:  parser.FormatXMLV,
 			input:   `<user><id>UUID</id></user>`,
-			wantErr: true,
+			wantErr: false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				if _, ok := obj.GetProperty("id"); !ok {
+					t.Error("property 'id' not found")
+				}
+			},
 		},
 	}
 

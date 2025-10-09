@@ -7,6 +7,8 @@ import (
 
 	"github.com/shapestone/shape/internal/parser"
 	"github.com/shapestone/shape/internal/parser/jsonv"
+	"github.com/shapestone/shape/internal/parser/propsv"
+	"github.com/shapestone/shape/internal/parser/xmlv"
 	"github.com/shapestone/shape/pkg/ast"
 )
 
@@ -32,6 +34,10 @@ func newParser(format parser.Format) (parser.Parser, error) {
 	switch format {
 	case parser.FormatJSONV:
 		return jsonv.NewParser(), nil
+	case parser.FormatPropsV:
+		return propsv.NewParser(), nil
+	case parser.FormatXMLV:
+		return xmlv.NewParser(), nil
 	default:
 		return nil, fmt.Errorf("unsupported format: %v", format)
 	}
