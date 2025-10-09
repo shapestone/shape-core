@@ -34,17 +34,17 @@ Shape is a multi-format validation schema parser library that converts 6 validat
 
 **Reference:** ADR 0001
 
-### 3. Integrated Tokenizer Framework
+### 3. Embedded Tokenization Framework
 
-**Decision:** Integrate tokenizer framework for most formats
+**Decision:** Embed tokenization code directly in shape (internal/tokenizer/)
 
 **Rationale:**
-- 60-70% code reuse (40-60 hours vs 100-150 hours)
-- UTF-8 and backtracking built-in
-- Battle-tested, production-ready
-- Self-contained framework (no external dependencies)
+- Self-contained library with zero tokenization dependencies
+- Full control over tokenization evolution
+- Simpler dependency chain for consumers
+- Battle-tested code migrated from df2-go
 
-**Reference:** ADR 0002
+**Reference:** ADR 0003 (supersedes ADR 0002)
 
 ### 4. Recursive Descent Parsing
 
@@ -64,12 +64,17 @@ Shape is a multi-format validation schema parser library that converts 6 validat
 shape/
 ├── pkg/shape/          # Public API (Parse, ParseAuto, MustParse)
 ├── pkg/ast/            # AST model (SchemaNode, 5 node types)
-└── internal/parser/    # Format parsers (JSONV, XMLV, PropsV, CSVV, YAMLV, TEXTV)
-    ├── parser.go       # Parser interface
-    ├── factory.go      # Parser factory
-    └── {format}/       # Format-specific parsers
-        ├── tokenizer.go
-        └── parser.go
+└── internal/
+    ├── tokenizer/      # Embedded tokenization framework
+    │   ├── stream.go
+    │   ├── tokens.go
+    │   └── matchers.go
+    └── parser/         # Format parsers (JSONV, XMLV, PropsV, CSVV, YAMLV, TEXTV)
+        ├── parser.go   # Parser interface
+        ├── factory.go  # Parser factory
+        └── {format}/   # Format-specific parsers
+            ├── tokenizer.go
+            └── parser.go
 ```
 
 ## AST Node Types
@@ -209,8 +214,8 @@ err = validator.ValidateWithAST(ast, data)
 - **google/uuid v1.6.0** - UUID generation (stable)
 - **gopkg.in/yaml.v3** - YAML parsing (for YAMLV)
 
-### Integrated Components
-- **Tokenizer framework** - Built into shape at internal/streams, internal/tokens, internal/text (self-contained)
+### Embedded Components
+- **Tokenization framework** - Embedded at internal/tokenizer/ (migrated from df2-go, see ADR 0003)
 
 ### Dependents
 - **data-validator** - Uses shape for schema parsing
@@ -255,7 +260,10 @@ err = validator.ValidateWithAST(ast, data)
 | [DATA_VALIDATOR_INTEGRATION.md](DATA_VALIDATOR_INTEGRATION.md) | Integration guide | data-validator team |
 | [README.md](../../README.md) | Project overview | External users |
 | [ADR 0001](decisions/0001-ast-design.md) | AST design | Architects |
-| [ADR 0002](decisions/0002-use-df2-go.md) | Integrated tokenizer framework | Architects |
+| [ADR 0002](decisions/0002-use-df2-go.md) | Use df2-go | Architects |
+| [ADR 0003](decisions/0003-embed-tokenizer.md) | Embed tokenization | Architects |
+| [MIGRATION_PLAN.md](MIGRATION_PLAN.md) | Tokenization migration | Implementation team |
+| [IMPACT_ANALYSIS.md](IMPACT_ANALYSIS.md) | Migration impact | Stakeholders |
 | SUMMARY.md (this doc) | Architecture summary | Stakeholders |
 
 ## Approval
