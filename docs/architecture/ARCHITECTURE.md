@@ -63,8 +63,9 @@ Shape is a multi-format validation schema parser library that converts validatio
 │  └──────────────┬──────────────────────────────────┘    │
 │                 │                                        │
 │  ┌──────────────▼──────────────────────────────────┐    │
-│  │      Integrated Tokenizer Framework             │    │
-│  │  (Stream, Pattern, Tokenizer)                   │    │
+│  │     Embedded Tokenization Framework             │    │
+│  │     (internal/tokenizer/)                       │    │
+│  │  Stream, Matchers, Position Tracking           │    │
 │  └─────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────┘
                           │
@@ -511,6 +512,20 @@ shape/
 │   │   ├── parser_test.go
 │   │   └── tokenizer_test.go
 │   │
+│   ├── tokenizer/                # Embedded tokenization framework
+│   │   ├── stream.go            # Character stream abstraction
+│   │   ├── stream_test.go
+│   │   ├── tokens.go            # Token struct and tokenizer
+│   │   ├── tokens_test.go
+│   │   ├── matchers.go          # Matcher interface + built-ins
+│   │   ├── matchers_test.go
+│   │   ├── position.go          # Position tracking
+│   │   ├── text.go              # Text/rune utilities
+│   │   ├── text_test.go
+│   │   ├── numbers.go           # Number parsing utilities
+│   │   ├── numbers_test.go
+│   │   └── README.md            # Tokenizer framework documentation
+│   │
 │   └── testdata/                 # Shared test fixtures
 │       ├── jsonv/
 │       │   ├── valid/            # Valid JSONV files
@@ -627,22 +642,25 @@ shape/
 - Complete API documentation
 - Ready for v0.1.0 release
 
-## 8. Integrated Tokenizer Framework
+## 8. Embedded Tokenization Framework
 
 ### 8.1 Tokenizer Architecture
 
-Shape includes an integrated tokenizer framework (originally from the df2-go project) that provides:
+Shape includes an embedded tokenization framework in `internal/tokenizer/` that provides:
+
+**Architecture Decision:** Originally developed as the df2-go project, the tokenization code has been embedded directly into shape to create a fully self-contained parser library with zero external tokenization dependencies (see ADR 0003).
 
 - **UTF-8 Support**: Native rune-based character stream processing
 - **Backtracking**: Stream cloning for speculative matching
 - **Position Tracking**: Automatic line/column tracking for error messages
 - **Pattern Composition**: Functional approach to building matchers
 
-**Core Components:**
-- `internal/streams/` - Character stream abstraction with position tracking
-- `internal/tokens/` - Tokenizer implementation with matcher framework
-- `internal/text/` - Text manipulation utilities
-- `internal/numbers/` - Numeric utilities
+**Embedded Structure:**
+- `internal/tokenizer/stream.go` - Stream abstraction with position tracking
+- `internal/tokenizer/tokens.go` - Token struct and Tokenizer implementation
+- `internal/tokenizer/matchers.go` - Matcher interface and built-in matchers
+- `internal/tokenizer/text.go` - Text and rune manipulation utilities
+- `internal/tokenizer/numbers.go` - Number parsing utilities
 
 ### 8.2 Tokenizer Pattern
 
@@ -652,23 +670,22 @@ Each format implements custom matchers using the integrated framework:
 package jsonv
 
 import (
-    "github.com/shapestone/shape/internal/streams"
-    "github.com/shapestone/shape/internal/tokens"
+    "github.com/shapestone/shape/internal/tokenizer"
 )
 
 // Custom JSONV matchers
-func identifierMatcher(stream streams.Stream) *tokens.Token {
+func identifierMatcher(stream tokenizer.Stream) *tokenizer.Token {
     // Match type identifiers: UUID, Email, etc.
 }
 
-func functionMatcher(stream streams.Stream) *tokens.Token {
+func functionMatcher(stream tokenizer.Stream) *tokenizer.Token {
     // Match function calls: Integer(1, 100)
 }
 
 // Matcher list (framework + custom)
-var Matchers = []tokens.Matcher{
-    tokens.CharMatcher("ObjectStart", '{'),
-    tokens.CharMatcher("ObjectEnd", '}'),
+var Matchers = []tokenizer.Matcher{
+    tokenizer.CharMatcher("ObjectStart", '{'),
+    tokenizer.CharMatcher("ObjectEnd", '}'),
     // ... built-in matchers
     functionMatcher,      // Custom
     identifierMatcher,    // Custom
@@ -686,12 +703,12 @@ package jsonv
 import (
     "github.com/shapestone/shape/pkg/ast"
     "github.com/shapestone/shape/internal/parser"
-    "github.com/shapestone/shape/internal/tokens"
+    "github.com/shapestone/shape/internal/tokenizer"
 )
 
 type Parser struct {
-    tokenizer *tokens.Tokenizer
-    current   *tokens.Token
+    tokenizer *tokenizer.Tokenizer
+    current   *tokenizer.Token
     hasToken  bool
 }
 
@@ -701,7 +718,7 @@ func NewParser() *Parser {
 
 func (p *Parser) Parse(input string) (ast.SchemaNode, error) {
     // Initialize tokenizer
-    t := tokens.NewTokenizer(Matchers...)
+    t := tokenizer.NewTokenizer(Matchers...)
     t.Initialize(input)
     p.tokenizer = &t
 
@@ -1097,7 +1114,8 @@ ObjectNode{
 
 ## Appendix C: References
 
-- **df2-go:** github.com/shapestone/df2-go (original tokenizer framework, now integrated into shape)
+- **Embedded Tokenization:** Tokenization code embedded from df2-go project at `internal/tokenizer/` (see ADR 0003)
+- **df2-go (original):** github.com/shapestone/df2-go
 - **wire:** github.com/shapestone/wire
 - **data-validator:** github.com/shapestone/data-validator
 - **Go Project Layout:** Standard Go project structure

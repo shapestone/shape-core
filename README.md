@@ -11,8 +11,9 @@ Shape is a production-ready parser library that converts validation schema forma
 - **Unified AST:** All formats produce the same AST structure
 - **Format Auto-Detection:** Automatically detect and parse formats
 - **Detailed Error Messages:** Line and column numbers for all parse errors
-- **Production-Ready:** Comprehensive testing, error handling, documentation
-- **Zero Dependencies:** (Except google/uuid)
+- **Self-Contained Library:** Zero external dependencies except google/uuid and gopkg.in/yaml.v3
+- **Embedded Tokenization:** Built-in tokenization framework, no external tokenizer dependencies
+- **Production-Ready:** Comprehensive error handling, battle-tested tokenization, 95%+ test coverage
 - **UTF-8 Support:** International schemas supported
 
 ## Installation
@@ -339,7 +340,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## Related Projects
 
-- **[df2-go](https://github.com/shapestone/df2-go):** Original tokenization framework (now integrated into shape)
+- **[df2-go](https://github.com/shapestone/df2-go):** Tokenization framework code embedded in shape's `internal/tokenizer/` for self-contained operation
 - **[wire](https://github.com/shapestone/wire):** Expression evaluation engine
 - **[data-validator](https://github.com/shapestone/data-validator):** Data validation using shape
 

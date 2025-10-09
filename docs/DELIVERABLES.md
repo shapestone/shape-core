@@ -18,11 +18,14 @@ shape/
 │   │   ├── SUMMARY.md                                ✓ Complete
 │   │   ├── IMPLEMENTATION_ROADMAP.md                 ✓ Complete (detailed 4-week plan)
 │   │   ├── DATA_VALIDATOR_INTEGRATION.md             ✓ Complete (integration guide)
+│   │   ├── MIGRATION_PLAN.md                      ✓ Complete (Tokenization migration)
+│   │   ├── IMPACT_ANALYSIS.md                     ✓ Complete (Migration impact)
 │   │   ├── decisions/
 │   │   │   ├── 0001-ast-design.md                    ✓ Complete
-│   │   │   ├── 0002-use-df2-go.md                    ✓ Complete (Integrated Tokenizer Framework)
-│   │   │   ├── 0003-parser-strategy.md               ⚠ To be created (Phase 2)
-│   │   │   └── 0004-error-handling.md                ⚠ To be created (Phase 2)
+│   │   │   ├── 0002-use-df2-go.md                    ⚠ Superseded by ADR 0003
+│   │   │   ├── 0003-embed-tokenizer.md           ✓ Complete (Migration from df2-go)
+│   │   │   ├── 0004-parser-strategy.md               ⚠ To be created (Phase 2)
+│   │   │   └── 0005-error-handling.md                ⚠ To be created (Phase 2)
 │   │   ├── diagrams/
 │   │   │   ├── component-diagram.md                  ⚠ To be created (Phase 1)
 │   │   │   ├── parser-flow.md                        ⚠ To be created (Phase 2)
@@ -214,27 +217,25 @@ shape/
 
 **Key Decision:** Interface-based AST with LiteralNode, TypeNode, FunctionNode, ObjectNode, ArrayNode
 
-### ADR 0002: Integrated Tokenizer Framework
-**Status:** ✓ Complete
+### ADR 0002: Use df2-go for Tokenization
+**Status:** ⚠ Superseded by ADR 0003
 **Location:** `/Users/michaelsundell/Projects/shapestone/shape/docs/architecture/decisions/0002-use-df2-go.md`
 
-**Contents:**
-- Context: Need to tokenize 6 formats
-- Decision: Integrate tokenizer framework into shape
-- Rationale: 60-70% effort savings, proven foundation
-- Why an integrated framework? (5 key reasons)
-- Format compatibility matrix
-- Key framework features for shape
-- Alternatives considered (4 alternatives)
-- Integration strategy with code examples
-- Consequences (positive, negative)
-- Risks and mitigations
-- YAML exception
-- Migration from data-validator ADR 0004
-- Success metrics
-- References
+**Note:** This ADR is superseded by ADR 0003 (Embed Tokenization). The decision to use df2-go as an external dependency has been replaced with embedding tokenization directly in shape.
 
-**Key Decision:** Integrated tokenizer framework, self-contained and battle-tested
+### ADR 0003: Embed Tokenization (Supersedes ADR 0002)
+**Status:** ✓ Complete
+**Location:** `/Users/michaelsundell/Projects/shapestone/shape/docs/architecture/decisions/0003-embed-tokenizer.md`
+
+**Contents:**
+- Context: Why embed instead of external df2-go dependency
+- Decision: Embed tokenization code in internal/tokenizer/
+- Rationale: Self-contained library, simpler dependencies, full control
+- Migration strategy: Copy df2-go code, refactor, test
+- Consequences: Zero external tokenization dependencies
+- Impact on roadmap: Phase 1 extended by 17-25 hours
+
+**Key Decision:** Embed tokenization directly in shape for self-contained operation
 
 ### ADR 0003: Parser Strategy
 **Status:** ⚠ To be created during Phase 2
@@ -263,7 +264,7 @@ shape/
 | Separate repository | Clear boundaries, reusable | High |
 | Interface-based AST | Type safety, extensible | High |
 | 5 node types | Complete, minimal, composable | High |
-| Integrated tokenizer framework | Self-contained, proven, direct control | High |
+| Embedded tokenization | Self-contained, zero deps, full control | High |
 | Recursive descent parsing | Clear, flexible, debuggable | Medium |
 | Format-agnostic AST | All formats → same structure | High |
 | Immutable nodes | Thread-safe, cacheable | Medium |

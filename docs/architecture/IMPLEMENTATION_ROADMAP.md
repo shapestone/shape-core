@@ -21,8 +21,8 @@ This roadmap outlines a 4-week implementation plan for the shape parser library.
 
 ## Phase 1: Foundation (Week 1)
 
-**Goal:** Establish core architecture and AST model  
-**Duration:** 30-40 hours  
+**Goal:** Establish core architecture and AST model
+**Duration:** 47-65 hours (includes tokenization migration)
 **Team:** 1 full-stack engineer or 1 system architect
 
 ### Deliverables
@@ -149,6 +149,42 @@ pkg/ast/
 - All tests pass
 - Tests cover edge cases
 
+#### 1.6 Tokenization Migration (17-25 hours)
+
+**Tasks:**
+- Migrate tokenization code from df2-go to internal/tokenizer/
+- Copy streams, tokens, text, numbers packages
+- Update package names and imports
+- Refactor and consolidate for shape's needs
+- Migrate all tests
+- Achieve 95%+ test coverage
+
+**Files Created:**
+```
+internal/tokenizer/
+├── stream.go             # Stream abstraction + patterns
+├── stream_test.go
+├── tokens.go             # Token + Tokenizer
+├── tokens_test.go
+├── matchers.go           # Matcher interface + built-ins
+├── matchers_test.go
+├── position.go           # Position tracking
+├── text.go               # Text + rune utilities
+├── text_test.go
+├── numbers.go            # Number parsing
+├── numbers_test.go
+└── README.md             # Tokenizer documentation
+```
+
+**Success Criteria:**
+- All df2-go tokenization code embedded
+- All df2-go tests migrated and passing
+- 95%+ test coverage
+- Zero external tokenization dependencies
+- Documentation complete
+
+**Reference:** See MIGRATION_PLAN.md for detailed migration steps
+
 ### Phase 1 Exit Criteria
 
 - [ ] Project structure complete
@@ -156,6 +192,8 @@ pkg/ast/
 - [ ] Visitor pattern works
 - [ ] Serialization round-trips correctly
 - [ ] 100% test coverage for AST
+- [ ] Tokenization framework embedded and tested
+- [ ] Zero df2-go dependency in go.mod
 - [ ] CI pipeline passes
 - [ ] Documentation complete (godoc)
 
@@ -171,19 +209,18 @@ pkg/ast/
 
 ### Deliverables
 
-#### 2.1 Tokenizer Framework Setup (1-2 hours)
+#### 2.1 JSONV Tokenizer Implementation (8-12 hours)
 
 **Tasks:**
-- Review integrated tokenizer framework (internal/streams, internal/tokens)
+- Use embedded tokenizer framework (internal/tokenizer)
+- Implement JSONV-specific matchers
 - Study existing JSON tokenizer patterns
 - Document tokenizer framework usage patterns
 - Create format-specific tokenizer templates
 
 **Files to Review:**
 ```
-internal/streams/  # Character stream abstraction
-internal/tokens/   # Tokenizer framework
-internal/text/     # Text utilities
+internal/tokenizer/  # Embedded tokenization framework
 ```
 
 **Success Criteria:**
@@ -701,10 +738,10 @@ CHANGELOG.md
 
 | Dependency | Timeline | Impact |
 |------------|----------|--------|
-| Tokenizer framework (integrated) | ✓ Ready | Enables all parsers |
+| Tokenization framework (embedded) | Phase 1 | Enables all parsers |
 | data-validator integration | Phase 2 exit | Validates API design |
 
-**Note:** The tokenizer framework is now integrated into shape at `internal/streams/`, `internal/tokens/`, `internal/text/`, and `internal/numbers/`. No external tokenization dependencies required.
+**Note:** The tokenization framework is embedded in shape at `internal/tokenizer/` (migrated from df2-go). See MIGRATION_PLAN.md and ADR 0003 for details. Zero external tokenization dependencies.
 
 ---
 

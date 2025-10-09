@@ -1,6 +1,8 @@
 # ADR 0002: Integrated Tokenizer Framework
 
-**Status:** Accepted
+**SUPERSEDED:** This ADR is superseded by ADR 0003 (Embed Tokenization)
+
+**Status:** Superseded by ADR 0003
 **Date:** 2025-10-09
 **Updated:** 2025-10-09
 **Context:** Shape needs to tokenize 6 validation formats
@@ -266,3 +268,18 @@ This integrated tokenizer framework was originally developed as the df2-go proje
 ## Date
 
 2025-10-09
+
+---
+
+## Superseded Notice
+
+**Date:** 2025-10-09
+**Superseded By:** ADR 0003 (Embed Tokenization)
+
+**Reason:** The decision to use df2-go as an external dependency has been replaced with embedding tokenization code directly into shape at `internal/tokenizer/`. This provides:
+- Zero external tokenization dependencies
+- Simpler dependency chain for consumers
+- Full control over tokenization evolution
+- Self-contained library architecture
+
+See ADR 0003 and MIGRATION_PLAN.md for details.

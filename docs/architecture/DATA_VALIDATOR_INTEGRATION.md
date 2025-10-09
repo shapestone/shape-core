@@ -31,11 +31,12 @@ data-validator/
 ### After shape (Decoupled)
 
 ```
-shape/ (separate repository)
-└── Parse schemas → AST
-
-data-validator/ (depends on shape)
+data-validator/ (depends on shape only)
 └── Traverse AST + validate data
+
+shape/ (self-contained)
+├── Parse schemas → AST
+└── Embedded tokenization (internal/tokenizer/)
 ```
 
 **Benefits:**
@@ -55,10 +56,12 @@ module github.com/shapestone/data-validator
 go 1.25
 
 require (
-    github.com/shapestone/shape v0.1.0  // Shape parser (self-contained)
+    github.com/shapestone/shape v0.1.0  // Self-contained parser (no df2-go dependency)
     github.com/shapestone/wire v0.9.0   // Wire expression engine
 )
 ```
+
+**Note:** Shape v0.1.0+ includes embedded tokenization. No df2-go dependency required.
 
 ### Version Pinning
 
