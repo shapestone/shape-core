@@ -422,3 +422,579 @@ func TestYAMLVParser_Format(t *testing.T) {
 		t.Errorf("Format() = %v, want %v", p.Format(), parser.FormatYAMLV)
 	}
 }
+
+// TestYAMLVParser_ArgumentParsing tests function argument parsing comprehensively
+func TestYAMLVParser_ArgumentParsing(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		checkFunc func(t *testing.T, node ast.SchemaNode)
+	}{
+		{
+			name:  "multiple numeric arguments",
+			input: "field: String(1, 100)",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 2 {
+					t.Fatalf("expected 2 args, got %d", len(args))
+				}
+				if args[0] != int64(1) {
+					t.Errorf("arg[0] = %v, want 1", args[0])
+				}
+				if args[1] != int64(100) {
+					t.Errorf("arg[1] = %v, want 100", args[1])
+				}
+			},
+		},
+		{
+			name:  "unbounded with plus separate",
+			input: "field: Integer(18, +)",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 2 {
+					t.Fatalf("expected 2 args, got %d", len(args))
+				}
+				if args[0] != int64(18) {
+					t.Errorf("arg[0] = %v, want 18", args[0])
+				}
+				if args[1] != "+" {
+					t.Errorf("arg[1] = %v, want +", args[1])
+				}
+			},
+		},
+		{
+			name:  "unbounded with plus attached",
+			input: "field: Integer(18+)",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 2 {
+					t.Fatalf("expected 2 args, got %d", len(args))
+				}
+				if args[0] != int64(18) {
+					t.Errorf("arg[0] = %v, want 18", args[0])
+				}
+				if args[1] != "+" {
+					t.Errorf("arg[1] = %v, want +", args[1])
+				}
+			},
+		},
+		{
+			name:  "quoted string arguments",
+			input: `field: Enum("active", "inactive", "pending")`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 3 {
+					t.Fatalf("expected 3 args, got %d", len(args))
+				}
+				if args[0] != "active" {
+					t.Errorf("arg[0] = %v, want 'active'", args[0])
+				}
+				if args[1] != "inactive" {
+					t.Errorf("arg[1] = %v, want 'inactive'", args[1])
+				}
+				if args[2] != "pending" {
+					t.Errorf("arg[2] = %v, want 'pending'", args[2])
+				}
+			},
+		},
+		{
+			name:  "string with comma inside",
+			input: `field: Enum("a,b", "c")`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 2 {
+					t.Fatalf("expected 2 args, got %d", len(args))
+				}
+				if args[0] != "a,b" {
+					t.Errorf("arg[0] = %v, want 'a,b'", args[0])
+				}
+			},
+		},
+		{
+			name:  "mixed type arguments",
+			input: `field: Function(1, "test", true, null)`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 4 {
+					t.Fatalf("expected 4 args, got %d", len(args))
+				}
+				if args[0] != int64(1) {
+					t.Errorf("arg[0] = %v (type %T), want 1", args[0], args[0])
+				}
+				if args[1] != "test" {
+					t.Errorf("arg[1] = %v, want 'test'", args[1])
+				}
+				if args[2] != true {
+					t.Errorf("arg[2] = %v, want true", args[2])
+				}
+				if args[3] != nil {
+					t.Errorf("arg[3] = %v, want nil", args[3])
+				}
+			},
+		},
+		{
+			name:  "float arguments",
+			input: "field: Function(1.5, 2.7)",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 2 {
+					t.Fatalf("expected 2 args, got %d", len(args))
+				}
+				if args[0] != 1.5 {
+					t.Errorf("arg[0] = %v, want 1.5", args[0])
+				}
+				if args[1] != 2.7 {
+					t.Errorf("arg[1] = %v, want 2.7", args[1])
+				}
+			},
+		},
+		{
+			name:  "empty args function",
+			input: "field: UUID()",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 0 {
+					t.Fatalf("expected 0 args, got %d", len(args))
+				}
+			},
+		},
+		{
+			name:  "escaped quotes in string",
+			input: `field: Pattern("quote \"inside\" string")`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 1 {
+					t.Fatalf("expected 1 arg, got %d", len(args))
+				}
+				expected := `quote "inside" string`
+				if args[0] != expected {
+					t.Errorf("arg[0] = %q, want %q", args[0], expected)
+				}
+			},
+		},
+		{
+			name:  "backslash escaping",
+			input: `field: Pattern("path\\to\\file")`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 1 {
+					t.Fatalf("expected 1 arg, got %d", len(args))
+				}
+				expected := `path\to\file`
+				if args[0] != expected {
+					t.Errorf("arg[0] = %q, want %q", args[0], expected)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser()
+			node, err := p.Parse(tt.input)
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			tt.checkFunc(t, node)
+		})
+	}
+}
+
+// TestYAMLVParser_EdgeCases tests edge cases and special scenarios
+func TestYAMLVParser_EdgeCases(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		checkFunc func(t *testing.T, node ast.SchemaNode)
+	}{
+		{
+			name: "tab indentation",
+			input: "user:\n\tid: UUID\n\tname: String",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				user, ok := obj.GetProperty("user")
+				if !ok {
+					t.Fatal("user property not found")
+				}
+				userObj := user.(*ast.ObjectNode)
+				if len(userObj.Properties()) != 2 {
+					t.Errorf("expected 2 properties, got %d", len(userObj.Properties()))
+				}
+			},
+		},
+		{
+			name: "inline comment after value",
+			input: "name: String # user's name\nage: Integer # user's age",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				if len(obj.Properties()) != 2 {
+					t.Errorf("expected 2 properties, got %d", len(obj.Properties()))
+				}
+				name, ok := obj.GetProperty("name")
+				if !ok {
+					t.Fatal("name property not found")
+				}
+				typeNode := name.(*ast.TypeNode)
+				if typeNode.TypeName() != "String" {
+					t.Errorf("name type = %q, want String", typeNode.TypeName())
+				}
+			},
+		},
+		{
+			name:  "null value",
+			input: "optional: null",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				optional, ok := obj.GetProperty("optional")
+				if !ok {
+					t.Fatal("optional property not found")
+				}
+				lit := optional.(*ast.LiteralNode)
+				if lit.Value() != nil {
+					t.Errorf("value = %v, want nil", lit.Value())
+				}
+			},
+		},
+		{
+			name:  "empty string literal",
+			input: `field: ""`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, ok := obj.GetProperty("field")
+				if !ok {
+					t.Fatal("field property not found")
+				}
+				lit := field.(*ast.LiteralNode)
+				if lit.Value() != "" {
+					t.Errorf("value = %q, want empty string", lit.Value())
+				}
+			},
+		},
+		{
+			name:  "negative integer",
+			input: "min: -100",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				min, ok := obj.GetProperty("min")
+				if !ok {
+					t.Fatal("min property not found")
+				}
+				lit := min.(*ast.LiteralNode)
+				if lit.Value() != int64(-100) {
+					t.Errorf("value = %v, want -100", lit.Value())
+				}
+			},
+		},
+		{
+			name:  "negative float",
+			input: "value: -3.14",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				val, ok := obj.GetProperty("value")
+				if !ok {
+					t.Fatal("value property not found")
+				}
+				lit := val.(*ast.LiteralNode)
+				if lit.Value() != -3.14 {
+					t.Errorf("value = %v, want -3.14", lit.Value())
+				}
+			},
+		},
+		{
+			name: "deeply nested 4 levels",
+			input: `level1:
+  level2:
+    level3:
+      level4: UUID`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				l1, _ := obj.GetProperty("level1")
+				l2, _ := l1.(*ast.ObjectNode).GetProperty("level2")
+				l3, _ := l2.(*ast.ObjectNode).GetProperty("level3")
+				l4, ok := l3.(*ast.ObjectNode).GetProperty("level4")
+				if !ok {
+					t.Fatal("level4 not found")
+				}
+				typeNode := l4.(*ast.TypeNode)
+				if typeNode.TypeName() != "UUID" {
+					t.Errorf("level4 type = %q, want UUID", typeNode.TypeName())
+				}
+			},
+		},
+		{
+			name: "quoted string value with spaces",
+			input: `message: "hello world"`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				msg, ok := obj.GetProperty("message")
+				if !ok {
+					t.Fatal("message property not found")
+				}
+				lit := msg.(*ast.LiteralNode)
+				if lit.Value() != "hello world" {
+					t.Errorf("value = %q, want 'hello world'", lit.Value())
+				}
+			},
+		},
+		{
+			name: "multiple properties with mixed types",
+			input: `str: String
+num: 42
+bool: true
+fn: Integer(1, 100)
+arr:
+  - UUID`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				if len(obj.Properties()) != 5 {
+					t.Errorf("expected 5 properties, got %d", len(obj.Properties()))
+				}
+			},
+		},
+		{
+			name: "comment-only lines should be skipped",
+			input: `# This is a comment
+name: String
+# Another comment
+age: Integer`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				if len(obj.Properties()) != 2 {
+					t.Errorf("expected 2 properties, got %d", len(obj.Properties()))
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser()
+			node, err := p.Parse(tt.input)
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+			tt.checkFunc(t, node)
+		})
+	}
+}
+
+// TestYAMLVParser_ErrorHandling tests comprehensive error scenarios
+func TestYAMLVParser_ErrorHandling(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       string
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name:        "empty input",
+			input:       "",
+			wantErr:     true,
+			errContains: "empty input",
+		},
+		{
+			name:        "missing colon",
+			input:       "name String",
+			wantErr:     true,
+			errContains: "expected ':'",
+		},
+		{
+			name: "missing value after colon",
+			input: `name:
+age: Integer`,
+			wantErr:     true,
+			errContains: "expected value",
+		},
+		{
+			name:        "array with 3 elements",
+			input:       "tags:\n  - String\n  - Integer\n  - UUID",
+			wantErr:     true,
+			errContains: "exactly one element",
+		},
+		{
+			name:        "empty array bracket syntax",
+			input:       "tags: []",
+			wantErr:     true,
+			errContains: "exactly one element",
+		},
+		{
+			name: "mixed array and object syntax",
+			input: `data:
+  - item
+  key: value`,
+			wantErr:     true,
+			errContains: "invalid YAML structure",
+		},
+		{
+			name:        "whitespace only",
+			input:       "   \n  \n  ",
+			wantErr:     true,
+			errContains: "empty input",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser()
+			_, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+				if tt.errContains != "" && !contains(err.Error(), tt.errContains) {
+					t.Errorf("error = %q, want to contain %q", err.Error(), tt.errContains)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+// contains checks if s contains substr
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && findSubstring(s, substr))
+}
+
+func findSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
+
+// TestYAMLVParser_ArrayEdgeCases tests additional array edge cases
+func TestYAMLVParser_ArrayEdgeCases(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		checkFunc func(t *testing.T, node ast.SchemaNode)
+		wantErr   bool
+	}{
+		{
+			name: "array with nested object element",
+			input: `items:
+  - 
+    id: UUID
+    name: String`,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				items, ok := obj.GetProperty("items")
+				if !ok {
+					t.Fatal("items property not found")
+				}
+				arr := items.(*ast.ArrayNode)
+				elem := arr.ElementSchema()
+				elemObj, ok := elem.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode for array element, got %T", elem)
+				}
+				if len(elemObj.Properties()) != 2 {
+					t.Errorf("expected 2 properties in array element, got %d", len(elemObj.Properties()))
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name:      "object key directly in array context",
+			input:     "arr:\n  - item\n  key: value",
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {},
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser()
+			node, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Parse() error = %v", err)
+				}
+				tt.checkFunc(t, node)
+			}
+		})
+	}
+}
+
+// TestNativeParser_Format tests the NativeParser Format method
+func TestNativeParser_Format(t *testing.T) {
+	p := NewNativeParser()
+	if p.Format() != parser.FormatYAMLV {
+		t.Errorf("Format() = %v, want %v", p.Format(), parser.FormatYAMLV)
+	}
+}
+
+// TestYAMLVParser_ParserEdgeCases tests remaining parser edge cases
+func TestYAMLVParser_ParserEdgeCases(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		wantErr bool
+	}{
+		{
+			name:    "lowercase string treated as literal",
+			input:   "field: lowercase",
+			wantErr: false,
+		},
+		{
+			name: "array with empty dash line",
+			input: `tags:
+  -`,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser()
+			_, err := p.Parse(tt.input)
+
+			if tt.wantErr && err == nil {
+				t.Fatal("expected error, got nil")
+			} else if !tt.wantErr && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
