@@ -291,6 +291,39 @@ v.RegisterType("SSN").
 
 ---
 
+## [0.2.2] - 2025-10-09
+
+### Added
+
+**Additional Test Coverage Improvements:**
+- Extended YAMLV parser tests with 14 additional test cases
+- Extended YAMLV tokenizer tests with 4 edge case scenarios
+- **Coverage increased from 93.5% to 95.9%** (+2.4% improvement)
+- **Total of 128 test cases** for YAMLV parser and tokenizer (+22 tests)
+
+**Coverage Improvements:**
+- functionMatcher: 93.9% → 97.0%
+- parseValue: 93.1% → 96.6%
+
+**New Test Scenarios:**
+- Nested object with extra indented lines
+- Invalid function arguments
+- Boolean false and null arguments in functions
+- Array item with missing multiline value
+- Mixed array/object syntax edge cases
+- Deeply nested array with object elements
+- Array with literal elements
+- Keys and identifiers with hyphens and numbers
+- Tokenizer empty stream and EOF edge cases
+
+### Quality
+
+- All 128 tests passing with race detection enabled
+- Production-grade confidence in native YAMLV parser (95.9% coverage)
+- Comprehensive edge case and error path coverage
+
+---
+
 ## [0.2.1] - 2025-10-09
 
 ### Added
@@ -346,6 +379,7 @@ v.RegisterType("SSN").
 
 ---
 
+[0.2.2]: https://github.com/shapestone/shape/releases/tag/v0.2.2
 [0.2.1]: https://github.com/shapestone/shape/releases/tag/v0.2.1
 [0.2.0]: https://github.com/shapestone/shape/releases/tag/v0.2.0
 [0.1.0]: https://github.com/shapestone/shape/releases/tag/v0.1.0

@@ -562,6 +562,41 @@ func TestCommentMatcher(t *testing.T) {
 	}
 }
 
+// TestTokenizerEdgeCases tests additional tokenizer edge cases
+func TestTokenizerEdgeCases(t *testing.T) {
+	t.Run("keyMatcher with empty stream", func(t *testing.T) {
+		stream := tokenizer.NewStream("")
+		token := keyMatcher(stream)
+		if token != nil {
+			t.Errorf("expected nil for empty stream, got %v", token)
+		}
+	})
+
+	t.Run("keyMatcher with special character start", func(t *testing.T) {
+		stream := tokenizer.NewStream("@invalid")
+		token := keyMatcher(stream)
+		if token != nil {
+			t.Errorf("expected nil for special char start, got %v", token)
+		}
+	})
+
+	t.Run("functionMatcher with EOF before paren", func(t *testing.T) {
+		stream := tokenizer.NewStream("UUID")
+		token := functionMatcher(stream)
+		if token != nil {
+			t.Errorf("expected nil when no paren found, got %v", token)
+		}
+	})
+
+	t.Run("functionMatcher with special char before paren", func(t *testing.T) {
+		stream := tokenizer.NewStream("UUID@")
+		token := functionMatcher(stream)
+		if token != nil {
+			t.Errorf("expected nil for special char before paren, got %v", token)
+		}
+	})
+}
+
 // TestGetMatchers tests the GetMatchers function
 func TestGetMatchers(t *testing.T) {
 	matchers := GetMatchers()

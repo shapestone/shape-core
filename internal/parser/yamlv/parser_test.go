@@ -998,3 +998,288 @@ func TestYAMLVParser_ParserEdgeCases(t *testing.T) {
 		})
 	}
 }
+
+// TestYAMLVParser_UncoveredLines tests specific uncovered code paths
+func TestYAMLVParser_UncoveredLines(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantErr   bool
+		checkFunc func(t *testing.T, node ast.SchemaNode)
+	}{
+		{
+			name: "nested object with extra indented lines",
+			input: `parent:
+  child:
+    grandchild: String
+      extraIndent: ignored
+  sibling: UUID`,
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				parent, ok := obj.GetProperty("parent")
+				if !ok {
+					t.Fatal("parent not found")
+				}
+				parentObj := parent.(*ast.ObjectNode)
+				if _, ok := parentObj.GetProperty("sibling"); !ok {
+					t.Error("sibling property not found")
+				}
+			},
+		},
+		{
+			name:    "invalid argument in function",
+			input:   "field: Function(@invalid)",
+			wantErr: true,
+		},
+		{
+			name: "boolean false argument",
+			input: "field: Function(false)",
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 1 || args[0] != false {
+					t.Errorf("expected args=[false], got %v", args)
+				}
+			},
+		},
+		{
+			name: "null argument in function",
+			input: "field: Function(null)",
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 1 || args[0] != nil {
+					t.Errorf("expected args=[nil], got %v", args)
+				}
+			},
+		},
+		{
+			name: "array item with missing value (multiline)",
+			input: `items:
+  -
+other: value`,
+			wantErr: true,
+		},
+		{
+			name: "mixed syntax - array then object key",
+			input: `data:
+  - String
+other: value`,
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				if len(obj.Properties()) != 2 {
+					t.Errorf("expected 2 properties, got %d", len(obj.Properties()))
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser()
+			node, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if tt.checkFunc != nil {
+					tt.checkFunc(t, node)
+				}
+			}
+		})
+	}
+}
+
+// TestYAMLVParser_TokenizerEdgeCases tests tokenizer edge cases
+func TestYAMLVParser_TokenizerEdgeCases(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantErr   bool
+		checkFunc func(t *testing.T, node ast.SchemaNode)
+	}{
+		{
+			name: "key starting with underscore",
+			input: "_private: String",
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				if _, ok := obj.GetProperty("_private"); !ok {
+					t.Error("_private property not found")
+				}
+			},
+		},
+		{
+			name: "key with numbers",
+			input: "field123: String",
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				if _, ok := obj.GetProperty("field123"); !ok {
+					t.Error("field123 property not found")
+				}
+			},
+		},
+		{
+			name: "function with nested parentheses in string",
+			input: `field: Pattern("(a|b)")`,
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				fn := field.(*ast.FunctionNode)
+				args := fn.Arguments()
+				if len(args) != 1 || args[0] != "(a|b)" {
+					t.Errorf("expected args=[\"(a|b)\"], got %v", args)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser()
+			node, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if tt.checkFunc != nil {
+					tt.checkFunc(t, node)
+				}
+			}
+		})
+	}
+}
+
+// TestYAMLVParser_AdditionalCoverage adds tests for remaining uncovered paths
+func TestYAMLVParser_AdditionalCoverage(t *testing.T) {
+	tests := []struct {
+		name      string
+		input     string
+		wantErr   bool
+		checkFunc func(t *testing.T, node ast.SchemaNode)
+	}{
+		{
+			name: "deeply nested array with object",
+			input: `data:
+  items:
+    -
+      id: UUID
+      value: String`,
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				data, _ := obj.GetProperty("data")
+				dataObj := data.(*ast.ObjectNode)
+				items, _ := dataObj.GetProperty("items")
+				arr := items.(*ast.ArrayNode)
+				elem := arr.ElementSchema()
+				elemObj, ok := elem.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode for array element, got %T", elem)
+				}
+				if len(elemObj.Properties()) != 2 {
+					t.Errorf("expected 2 properties in array element, got %d", len(elemObj.Properties()))
+				}
+			},
+		},
+		{
+			name: "array with literal element",
+			input: `tags:
+  - "fixed-value"`,
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				tags, _ := obj.GetProperty("tags")
+				arr := tags.(*ast.ArrayNode)
+				elem := arr.ElementSchema()
+				lit, ok := elem.(*ast.LiteralNode)
+				if !ok {
+					t.Fatalf("expected LiteralNode for array element, got %T", elem)
+				}
+				if lit.Value() != "fixed-value" {
+					t.Errorf("expected 'fixed-value', got %v", lit.Value())
+				}
+			},
+		},
+		{
+			name: "function with no parentheses not a function",
+			input: `field: UUID`,
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				field, _ := obj.GetProperty("field")
+				typeNode, ok := field.(*ast.TypeNode)
+				if !ok {
+					t.Fatalf("expected TypeNode, got %T", field)
+				}
+				if typeNode.TypeName() != "UUID" {
+					t.Errorf("expected UUID, got %s", typeNode.TypeName())
+				}
+			},
+		},
+		{
+			name: "key with hyphens",
+			input: "user-name: String",
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				if _, ok := obj.GetProperty("user-name"); !ok {
+					t.Error("user-name property not found")
+				}
+			},
+		},
+		{
+			name: "identifier with hyphens",
+			input: "date: ISO-8601",
+			wantErr: false,
+			checkFunc: func(t *testing.T, node ast.SchemaNode) {
+				obj := node.(*ast.ObjectNode)
+				date, _ := obj.GetProperty("date")
+				typeNode := date.(*ast.TypeNode)
+				if typeNode.TypeName() != "ISO-8601" {
+					t.Errorf("expected ISO-8601, got %s", typeNode.TypeName())
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := NewParser()
+			node, err := p.Parse(tt.input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if tt.checkFunc != nil {
+					tt.checkFunc(t, node)
+				}
+			}
+		})
+	}
+}
