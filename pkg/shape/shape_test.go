@@ -266,6 +266,7 @@ func TestParseAuto(t *testing.T) {
 		wantErr        bool
 		check          func(t *testing.T, node ast.SchemaNode)
 	}{
+		// JSONV detection
 		{
 			name:           "detect JSONV object",
 			input:          `{"id": UUID}`,
@@ -294,6 +295,116 @@ func TestParseAuto(t *testing.T) {
 			expectedFormat: parser.FormatJSONV,
 			wantErr:        false,
 		},
+
+		// XMLV detection
+		{
+			name:           "detect XMLV",
+			input:          `<user><id>UUID</id></user>`,
+			expectedFormat: parser.FormatXMLV,
+			wantErr:        false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				if node.Type() != ast.NodeTypeObject {
+					t.Errorf("node.Type() = %v, want %v", node.Type(), ast.NodeTypeObject)
+				}
+			},
+		},
+
+		// PropsV detection
+		{
+			name:           "detect PropsV simple",
+			input:          `id=UUID`,
+			expectedFormat: parser.FormatPropsV,
+			wantErr:        false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				if _, ok := obj.GetProperty("id"); !ok {
+					t.Error("property 'id' not found")
+				}
+			},
+		},
+		{
+			name:           "detect PropsV with dot notation",
+			input:          `user.id=UUID`,
+			expectedFormat: parser.FormatPropsV,
+			wantErr:        false,
+		},
+
+		// CSVV detection
+		{
+			name:           "detect CSVV",
+			input:          "id,name,email\nUUID,String,Email",
+			expectedFormat: parser.FormatCSVV,
+			wantErr:        false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				if _, ok := obj.GetProperty("id"); !ok {
+					t.Error("property 'id' not found")
+				}
+			},
+		},
+
+		// YAMLV detection
+		{
+			name:           "detect YAMLV simple",
+			input:          "id: UUID\nname: String",
+			expectedFormat: parser.FormatYAMLV,
+			wantErr:        false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				if _, ok := obj.GetProperty("id"); !ok {
+					t.Error("property 'id' not found")
+				}
+			},
+		},
+		{
+			name:           "detect YAMLV nested",
+			input:          "user:\n  id: UUID\n  name: String",
+			expectedFormat: parser.FormatYAMLV,
+			wantErr:        false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				if _, ok := obj.GetProperty("user"); !ok {
+					t.Error("property 'user' not found")
+				}
+			},
+		},
+
+		// TEXTV detection
+		{
+			name:           "detect TEXTV with dot notation",
+			input:          "user.id: UUID",
+			expectedFormat: parser.FormatTEXTV,
+			wantErr:        false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				if _, ok := obj.GetProperty("user"); !ok {
+					t.Error("property 'user' not found")
+				}
+			},
+		},
+		{
+			name:           "detect TEXTV multiple properties",
+			input:          "user.id: UUID\nuser.name: String(1, 100)",
+			expectedFormat: parser.FormatTEXTV,
+			wantErr:        false,
+		},
+
+		// Error cases
 		{
 			name:    "empty input",
 			input:   "",

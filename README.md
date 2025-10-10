@@ -355,13 +355,15 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ## Roadmap
 
-### v0.1.0 (Current)
+### v0.1.0 (Released)
 - All 6 format parsers
 - Unified AST
-- Format auto-detection
+- Format auto-detection (JSONV only)
 - Comprehensive testing
 
-### v0.2.0 (Future)
+### v0.2.0 (In Development)
+- Format auto-detection for all 6 formats ✅
+- Replace YAMLV yaml.v3 with native parser
 - Schema validation
 - AST optimization
 - Custom validator registration

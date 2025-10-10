@@ -35,6 +35,7 @@ func TestDetectFormat(t *testing.T) {
 		expected Format
 		wantErr  bool
 	}{
+		// JSONV tests
 		{
 			name:     "JSONV object",
 			input:    `{"id": UUID}`,
@@ -54,23 +55,119 @@ func TestDetectFormat(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "XMLV",
+			name:     "JSONV nested object",
+			input:    `{"user": {"id": UUID, "name": String}}`,
+			expected: FormatJSONV,
+			wantErr:  false,
+		},
+
+		// XMLV tests
+		{
+			name:     "XMLV simple",
 			input:    `<user><id>UUID</id></user>`,
 			expected: FormatXMLV,
 			wantErr:  false,
 		},
 		{
-			name:     "PropsV",
+			name:     "XMLV with whitespace",
+			input:    "  \n <user>\n  <id>UUID</id>\n</user>",
+			expected: FormatXMLV,
+			wantErr:  false,
+		},
+
+		// PropsV tests
+		{
+			name:     "PropsV simple",
 			input:    `id=UUID`,
 			expected: FormatPropsV,
 			wantErr:  false,
 		},
 		{
-			name:     "CSVV",
+			name:     "PropsV with dot notation",
+			input:    `user.id=UUID`,
+			expected: FormatPropsV,
+			wantErr:  false,
+		},
+		{
+			name:     "PropsV multiple lines",
+			input:    "id=UUID\nname=String",
+			expected: FormatPropsV,
+			wantErr:  false,
+		},
+
+		// CSVV tests
+		{
+			name:     "CSVV simple header",
 			input:    `id,name,age`,
 			expected: FormatCSVV,
 			wantErr:  false,
 		},
+		{
+			name:     "CSVV with header and validation",
+			input:    "id,name\nUUID,String",
+			expected: FormatCSVV,
+			wantErr:  false,
+		},
+		{
+			name:     "CSVV with comment",
+			input:    "# Schema\nid,name,email",
+			expected: FormatCSVV,
+			wantErr:  false,
+		},
+
+		// YAMLV tests
+		{
+			name:     "YAMLV simple",
+			input:    `id: UUID`,
+			expected: FormatYAMLV,
+			wantErr:  false,
+		},
+		{
+			name:     "YAMLV nested",
+			input:    "user:\n  id: UUID\n  name: String",
+			expected: FormatYAMLV,
+			wantErr:  false,
+		},
+		{
+			name:     "YAMLV with array",
+			input:    "tags:\n  - String(1, 30)",
+			expected: FormatYAMLV,
+			wantErr:  false,
+		},
+		{
+			name:     "YAMLV multiple properties",
+			input:    "id: UUID\nname: String\nemail: Email",
+			expected: FormatYAMLV,
+			wantErr:  false,
+		},
+
+		// TEXTV tests
+		{
+			name:     "TEXTV with dot notation",
+			input:    `user.id: UUID`,
+			expected: FormatTEXTV,
+			wantErr:  false,
+		},
+		{
+			name:     "TEXTV multiple properties",
+			input:    "user.id: UUID\nuser.name: String",
+			expected: FormatTEXTV,
+			wantErr:  false,
+		},
+		{
+			name:     "TEXTV with array syntax",
+			input:    "user.tags[]: String",
+			expected: FormatTEXTV,
+			wantErr:  false,
+		},
+		{
+			name:     "TEXTV deeply nested",
+			input:    "user.profile.name: String(1, 100)",
+			expected: FormatTEXTV,
+			wantErr:  false,
+		},
+
+		// Error cases
 		{
 			name:     "empty input",
 			input:    "",
