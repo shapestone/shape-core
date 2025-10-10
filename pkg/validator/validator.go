@@ -32,6 +32,72 @@ func (v *Validator) Validate(node ast.SchemaNode) error {
 	return node.Accept(v)
 }
 
+// RegisterType registers a custom type name for validation.
+// This allows schemas to use custom types beyond the built-in types.
+// Returns the validator for method chaining.
+//
+// Example:
+//
+//	v := validator.NewValidator()
+//	v.RegisterType("SSN").RegisterType("PhoneNumber")
+func (v *Validator) RegisterType(typeName string) *Validator {
+	v.knownTypes[typeName] = true
+	return v
+}
+
+// RegisterFunction registers a custom function with validation rules.
+// This allows schemas to use custom validation functions beyond the built-in functions.
+// Returns the validator for method chaining.
+//
+// Example:
+//
+//	v := validator.NewValidator()
+//	v.RegisterFunction("SSN", validator.FunctionRule{
+//	    MinArgs: 0,
+//	    MaxArgs: 0,
+//	})
+func (v *Validator) RegisterFunction(name string, rule FunctionRule) *Validator {
+	v.knownFunctions[name] = rule
+	return v
+}
+
+// UnregisterType removes a registered type.
+// Note: Cannot unregister built-in types.
+// Returns the validator for method chaining.
+func (v *Validator) UnregisterType(typeName string) *Validator {
+	// Check if it's a built-in type
+	builtins := defaultTypes()
+	if builtins[typeName] {
+		return v // Silently ignore attempts to unregister built-in types
+	}
+	delete(v.knownTypes, typeName)
+	return v
+}
+
+// UnregisterFunction removes a registered function.
+// Note: Cannot unregister built-in functions.
+// Returns the validator for method chaining.
+func (v *Validator) UnregisterFunction(name string) *Validator {
+	// Check if it's a built-in function
+	builtins := defaultFunctions()
+	if _, ok := builtins[name]; ok {
+		return v // Silently ignore attempts to unregister built-in functions
+	}
+	delete(v.knownFunctions, name)
+	return v
+}
+
+// IsTypeRegistered checks if a type is registered.
+func (v *Validator) IsTypeRegistered(typeName string) bool {
+	return v.knownTypes[typeName]
+}
+
+// IsFunctionRegistered checks if a function is registered.
+func (v *Validator) IsFunctionRegistered(name string) bool {
+	_, ok := v.knownFunctions[name]
+	return ok
+}
+
 // VisitLiteral validates a literal node.
 func (v *Validator) VisitLiteral(node *ast.LiteralNode) error {
 	// Literals are always valid

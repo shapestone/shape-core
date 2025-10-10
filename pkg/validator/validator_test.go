@@ -273,3 +273,226 @@ func TestValidator_LiteralAlwaysValid(t *testing.T) {
 		}
 	}
 }
+
+func TestValidator_RegisterType(t *testing.T) {
+	v := NewValidator()
+
+	// Custom type should initially fail validation
+	node := ast.NewTypeNode("SSN", ast.Position{Line: 1, Column: 1})
+	err := v.Validate(node)
+	if err == nil {
+		t.Error("Expected error for unregistered type 'SSN', got nil")
+	}
+
+	// Register the custom type
+	v.RegisterType("SSN")
+
+	// Now it should pass validation
+	err = v.Validate(node)
+	if err != nil {
+		t.Errorf("After RegisterType('SSN'), expected nil error, got %v", err)
+	}
+
+	// Check if type is registered
+	if !v.IsTypeRegistered("SSN") {
+		t.Error("IsTypeRegistered('SSN') = false, want true")
+	}
+}
+
+func TestValidator_RegisterType_Chaining(t *testing.T) {
+	v := NewValidator()
+
+	// Test method chaining
+	v.RegisterType("SSN").RegisterType("PhoneNumber").RegisterType("ZipCode")
+
+	// All should be registered
+	types := []string{"SSN", "PhoneNumber", "ZipCode"}
+	for _, typeName := range types {
+		if !v.IsTypeRegistered(typeName) {
+			t.Errorf("IsTypeRegistered(%q) = false, want true", typeName)
+		}
+
+		node := ast.NewTypeNode(typeName, ast.Position{Line: 1, Column: 1})
+		err := v.Validate(node)
+		if err != nil {
+			t.Errorf("Validate(%q) error = %v, want nil", typeName, err)
+		}
+	}
+}
+
+func TestValidator_RegisterFunction(t *testing.T) {
+	v := NewValidator()
+
+	// Custom function should initially fail validation
+	node := ast.NewFunctionNode("CreditCard", []interface{}{}, ast.Position{Line: 1, Column: 1})
+	err := v.Validate(node)
+	if err == nil {
+		t.Error("Expected error for unregistered function 'CreditCard', got nil")
+	}
+
+	// Register the custom function
+	v.RegisterFunction("CreditCard", FunctionRule{
+		MinArgs: 0,
+		MaxArgs: 1,
+	})
+
+	// Now it should pass validation
+	err = v.Validate(node)
+	if err != nil {
+		t.Errorf("After RegisterFunction('CreditCard'), expected nil error, got %v", err)
+	}
+
+	// Check if function is registered
+	if !v.IsFunctionRegistered("CreditCard") {
+		t.Error("IsFunctionRegistered('CreditCard') = false, want true")
+	}
+}
+
+func TestValidator_RegisterFunction_WithValidator(t *testing.T) {
+	v := NewValidator()
+
+	// Register function with custom argument validator
+	v.RegisterFunction("Even", FunctionRule{
+		MinArgs: 0,
+		MaxArgs: 0,
+	})
+
+	// Valid: no arguments
+	node := ast.NewFunctionNode("Even", []interface{}{}, ast.Position{Line: 1, Column: 1})
+	err := v.Validate(node)
+	if err != nil {
+		t.Errorf("Validate() error = %v, want nil", err)
+	}
+
+	// Invalid: too many arguments
+	node = ast.NewFunctionNode("Even", []interface{}{int64(1)}, ast.Position{Line: 1, Column: 1})
+	err = v.Validate(node)
+	if err == nil {
+		t.Error("Expected error for too many arguments, got nil")
+	}
+}
+
+func TestValidator_RegisterFunction_Chaining(t *testing.T) {
+	v := NewValidator()
+
+	// Test method chaining
+	v.RegisterFunction("SSN", FunctionRule{MinArgs: 0, MaxArgs: 0}).
+		RegisterFunction("CreditCard", FunctionRule{MinArgs: 0, MaxArgs: 1}).
+		RegisterFunction("PhoneNumber", FunctionRule{MinArgs: 1, MaxArgs: 1})
+
+	// All should be registered
+	if !v.IsFunctionRegistered("SSN") {
+		t.Error("IsFunctionRegistered('SSN') = false, want true")
+	}
+	if !v.IsFunctionRegistered("CreditCard") {
+		t.Error("IsFunctionRegistered('CreditCard') = false, want true")
+	}
+	if !v.IsFunctionRegistered("PhoneNumber") {
+		t.Error("IsFunctionRegistered('PhoneNumber') = false, want true")
+	}
+}
+
+func TestValidator_UnregisterType(t *testing.T) {
+	v := NewValidator()
+
+	// Register and then unregister a custom type
+	v.RegisterType("CustomType")
+	if !v.IsTypeRegistered("CustomType") {
+		t.Error("CustomType should be registered")
+	}
+
+	v.UnregisterType("CustomType")
+	if v.IsTypeRegistered("CustomType") {
+		t.Error("CustomType should be unregistered")
+	}
+
+	// Should fail validation after unregistering
+	node := ast.NewTypeNode("CustomType", ast.Position{Line: 1, Column: 1})
+	err := v.Validate(node)
+	if err == nil {
+		t.Error("Expected error for unregistered type, got nil")
+	}
+}
+
+func TestValidator_UnregisterType_BuiltIn(t *testing.T) {
+	v := NewValidator()
+
+	// Attempting to unregister a built-in type should be silently ignored
+	v.UnregisterType("UUID")
+	if !v.IsTypeRegistered("UUID") {
+		t.Error("Built-in type UUID should still be registered")
+	}
+
+	// Should still pass validation
+	node := ast.NewTypeNode("UUID", ast.Position{Line: 1, Column: 1})
+	err := v.Validate(node)
+	if err != nil {
+		t.Errorf("UUID should still be valid, got error: %v", err)
+	}
+}
+
+func TestValidator_UnregisterFunction(t *testing.T) {
+	v := NewValidator()
+
+	// Register and then unregister a custom function
+	v.RegisterFunction("CustomFunc", FunctionRule{MinArgs: 0, MaxArgs: 0})
+	if !v.IsFunctionRegistered("CustomFunc") {
+		t.Error("CustomFunc should be registered")
+	}
+
+	v.UnregisterFunction("CustomFunc")
+	if v.IsFunctionRegistered("CustomFunc") {
+		t.Error("CustomFunc should be unregistered")
+	}
+
+	// Should fail validation after unregistering
+	node := ast.NewFunctionNode("CustomFunc", []interface{}{}, ast.Position{Line: 1, Column: 1})
+	err := v.Validate(node)
+	if err == nil {
+		t.Error("Expected error for unregistered function, got nil")
+	}
+}
+
+func TestValidator_UnregisterFunction_BuiltIn(t *testing.T) {
+	v := NewValidator()
+
+	// Attempting to unregister a built-in function should be silently ignored
+	v.UnregisterFunction("String")
+	if !v.IsFunctionRegistered("String") {
+		t.Error("Built-in function String should still be registered")
+	}
+
+	// Should still pass validation
+	node := ast.NewFunctionNode("String", []interface{}{int64(1), int64(100)}, ast.Position{Line: 1, Column: 1})
+	err := v.Validate(node)
+	if err != nil {
+		t.Errorf("String function should still be valid, got error: %v", err)
+	}
+}
+
+func TestValidator_CustomTypesAndFunctions(t *testing.T) {
+	v := NewValidator()
+
+	// Register custom types and functions
+	v.RegisterType("SSN").
+		RegisterType("CreditCard").
+		RegisterFunction("ValidateSSN", FunctionRule{MinArgs: 0, MaxArgs: 1}).
+		RegisterFunction("ValidateCreditCard", FunctionRule{MinArgs: 0, MaxArgs: 0})
+
+	// Create a schema using custom types and functions
+	schema := ast.NewObjectNode(
+		map[string]ast.SchemaNode{
+			"id":         ast.NewTypeNode("UUID", ast.Position{Line: 1, Column: 1}), // Built-in
+			"ssn":        ast.NewTypeNode("SSN", ast.Position{Line: 2, Column: 1}),  // Custom
+			"card":       ast.NewTypeNode("CreditCard", ast.Position{Line: 3, Column: 1}), // Custom
+			"validatedSSN": ast.NewFunctionNode("ValidateSSN", []interface{}{}, ast.Position{Line: 4, Column: 1}), // Custom
+			"validatedCard": ast.NewFunctionNode("ValidateCreditCard", []interface{}{}, ast.Position{Line: 5, Column: 1}), // Custom
+		},
+		ast.Position{Line: 1, Column: 1},
+	)
+
+	err := v.Validate(schema)
+	if err != nil {
+		t.Errorf("Validate() error = %v, want nil", err)
+	}
+}
