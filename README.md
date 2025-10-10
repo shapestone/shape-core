@@ -11,7 +11,7 @@ Shape is a production-ready parser library that converts validation schema forma
 - **Unified AST:** All formats produce the same AST structure
 - **Format Auto-Detection:** Automatically detect and parse formats
 - **Detailed Error Messages:** Line and column numbers for all parse errors
-- **Self-Contained Library:** Zero external dependencies except google/uuid and gopkg.in/yaml.v3
+- **Self-Contained Library:** Zero external dependencies except google/uuid
 - **Embedded Tokenization:** Built-in tokenization framework, no external tokenizer dependencies
 - **Production-Ready:** Comprehensive error handling, battle-tested tokenization, 95%+ test coverage
 - **UTF-8 Support:** International schemas supported
@@ -363,7 +363,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ### v0.2.0 (In Development)
 - Format auto-detection for all 6 formats ✅
-- Replace YAMLV yaml.v3 with native parser
+- Replace YAMLV yaml.v3 with native parser ✅
 - Schema validation
 - AST optimization
 - Custom validator registration
