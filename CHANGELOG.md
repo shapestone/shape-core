@@ -146,25 +146,162 @@ shape/
 
 ---
 
+## [0.2.0] - 2025-10-09
+
+### Added
+
+**Format Detection:**
+- Complete auto-detection for all 6 formats in `ParseAuto()`
+- Priority-based heuristic analysis (JSONV → XMLV → CSVV → PropsV → YAMLV → TEXTV)
+- Minimal overhead (~100-150ns compared to direct Parse calls)
+- 23 comprehensive test cases covering all formats and edge cases
+
+**Schema Validation:**
+- Built-in validator with 15 standard types (UUID, Email, String, Integer, Float, Boolean, ISO-8601, URL, IPv4, IPv6, Date, Time, DateTime, JSON, Base64)
+- 7 built-in functions (String, Integer, Float, Enum, Pattern, Length, Range)
+- Visitor pattern implementation for AST traversal
+- Comprehensive validation rules for function arguments
+- Support for unbounded ranges with `+` syntax (e.g., `String(1, +)`)
+- 45 comprehensive test cases
+
+**Custom Validator Registration:**
+- `RegisterType()` - Register custom type names
+- `RegisterFunction()` - Register custom functions with validation rules
+- `UnregisterType()` / `UnregisterFunction()` - Remove custom validators
+- `IsTypeRegistered()` / `IsFunctionRegistered()` - Query registration status
+- Method chaining for fluent API
+- Built-in types and functions protected from unregistration
+- 10 test functions with comprehensive coverage
+
+**AST Optimization:**
+- String interning for type and function names
+- Pre-populated cache with 15 common types + 8 common functions
+- Thread-safe implementation with RWMutex
+- Foundation for future pooling optimizations
+
+### Changed
+
+**YAMLV Parser - Major Rewrite:**
+- Replaced `gopkg.in/yaml.v3` dependency with custom native parser
+- Line-based parsing approach with indentation tracking
+- **5-6x performance improvement** across all schema sizes:
+  - Simple schemas: 0.7µs (was 4.7µs) - **6.7x faster!**
+  - Medium schemas: 2.7µs (was 14.9µs) - **5.5x faster!**
+  - Large schemas: 8.9µs (was 47.1µs) - **5.3x faster!**
+- **3-5x memory reduction** for YAMLV parsing
+- **2-3x reduction in allocations**
+- YAMLV is now the **fastest parser** in Shape!
+
+**Dependencies:**
+- **Removed `gopkg.in/yaml.v3` dependency** ✅
+- Now only 1 external dependency: `github.com/google/uuid`
+
+**Performance Rankings Updated:**
+1. **YAMLV** - 0.7-8.9µs (NEW CHAMPION! 🏆)
+2. CSVV - 2.7-21.6µs
+3. PropsV/XMLV/TEXTV - 3.2-52.5µs
+4. JSONV - 4.8-70µs
+
+### Performance
+
+**Benchmarks (Apple M1 Max):**
+
+| Format | Simple | Medium | Large  | vs v0.1.0  |
+|--------|--------|--------|--------|------------|
+| YAMLV  | 0.7µs  | 2.7µs  | 8.9µs  | **5-6x faster** |
+| CSVV   | 2.7µs  | 6.6µs  | 21.6µs | ~same      |
+| PropsV | 3.2µs  | 12.1µs | 43.3µs | ~same      |
+| XMLV   | 3.2µs  | 12.6µs | 44.3µs | ~same      |
+| TEXTV  | 3.7µs  | 13.0µs | 52.5µs | ~same      |
+| JSONV  | 4.8µs  | 20.6µs | 70.0µs | ~same      |
+
+**Memory Usage:**
+- Simple schemas: 1-10KB (YAMLV: 1KB, JSONV: 9.5KB)
+- Medium schemas: 4-41KB (YAMLV: 4KB, JSONV: 40.7KB)
+- Large schemas: 12-134KB (YAMLV: 12KB, JSONV: 134KB)
+
+**Allocation Counts:**
+- YAMLV: 24-242 allocations (lowest!)
+- CSVV: 87-683 allocations
+- Other formats: 97-2148 allocations
+
+See `docs/BENCHMARKS.md` for detailed analysis.
+
+### Documentation
+
+- Updated README with v0.2.0 features and performance improvements
+- Added schema validation section with examples
+- Added custom validator registration documentation
+- Updated benchmark tables with YAMLV native parser results
+- Updated performance recommendations (YAMLV now recommended for all use cases)
+- Added release automation documentation (`RELEASING.md`)
+- Created v0.2.0 release checklist
+
+### Infrastructure
+
+- Added GitHub Actions workflow for automated releases (`.github/workflows/release.yml`)
+- Created release automation script (`scripts/release.sh`)
+- Added `RELEASING.md` with quick reference guide
+
+### Implementation Notes
+
+**Native YAMLV Parser:**
+- Custom line-based parser without external dependencies
+- Indentation tracking with `ParseLines()` function
+- Validates structure during parsing (no separate validation pass)
+- Handles nested objects and arrays correctly
+- Comprehensive error messages with position information
+
+**String Interning:**
+- Global interner with pre-populated common names
+- Lock-free fast path for common lookups (RWMutex read lock)
+- Used automatically in `NewTypeNode()` and `NewFunctionNode()`
+- Reduces string allocations for schemas with repeated type names
+
+### Breaking Changes
+
+None! v0.2.0 is fully backward compatible with v0.1.0.
+
+### Migration Guide
+
+No migration needed. All v0.1.0 code continues to work.
+
+**New features to adopt:**
+
+```go
+// Use ParseAuto for any format (not just JSONV)
+ast, format, err := shape.ParseAuto(schemaInput)
+
+// Validate schemas
+if err := shape.Validate(ast); err != nil {
+    log.Printf("Validation error: %v", err)
+}
+
+// Register custom validators
+v := validator.NewValidator()
+v.RegisterType("SSN").
+  RegisterFunction("Luhn", validator.FunctionRule{MinArgs: 0, MaxArgs: 0})
+```
+
+### Contributors
+
+- Implementation by the Shapestone team
+- Native YAMLV parser development
+- Validator framework design and implementation
+
+---
+
 ## [Unreleased]
-
-### Planned for v0.2.0
-
-- Replace YAMLV yaml.v3 dependency with native parser
-- Extend ParseAuto to detect all 6 formats
-- Schema validation rules
-- AST optimization passes
-- Custom validator registration
-- Additional format support (potential)
 
 ### Planned for v1.0.0
 
 - Stable API guarantee
 - Production battle-testing complete
-- Performance optimizations
+- Additional performance optimizations
 - Comprehensive real-world examples
 - Integration guides for common frameworks
 
 ---
 
+[0.2.0]: https://github.com/shapestone/shape/releases/tag/v0.2.0
 [0.1.0]: https://github.com/shapestone/shape/releases/tag/v0.1.0
