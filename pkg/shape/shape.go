@@ -13,6 +13,7 @@ import (
 	"github.com/shapestone/shape/internal/parser/xmlv"
 	"github.com/shapestone/shape/internal/parser/yamlv"
 	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape/pkg/validator"
 )
 
 // Parse parses input with an explicit format.
@@ -88,4 +89,21 @@ func MustParse(format parser.Format, input string) ast.SchemaNode {
 		panic(err)
 	}
 	return node
+}
+
+// Validate validates a schema AST against the default validation rules.
+// This checks for unknown types, invalid functions, and constraint violations.
+//
+// Example:
+//
+//	node, err := shape.Parse(parser.FormatJSONV, `{"id": "UnknownType"}`)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	if err := shape.Validate(node); err != nil {
+//	    log.Printf("Validation error: %v", err)
+//	}
+func Validate(node ast.SchemaNode) error {
+	v := validator.NewValidator()
+	return v.Validate(node)
 }

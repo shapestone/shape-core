@@ -10,6 +10,7 @@ Shape is a production-ready parser library that converts validation schema forma
 - **6 Format Support:** JSONV, XMLV, PropsV, CSVV, YAMLV, TEXTV
 - **Unified AST:** All formats produce the same AST structure
 - **Format Auto-Detection:** Automatically detect and parse formats
+- **Schema Validation:** Validate schemas for unknown types, invalid functions, and constraint violations
 - **Detailed Error Messages:** Line and column numbers for all parse errors
 - **Self-Contained Library:** Zero external dependencies except google/uuid
 - **Embedded Tokenization:** Built-in tokenization framework, no external tokenizer dependencies
@@ -67,6 +68,21 @@ if err != nil {
 
 fmt.Printf("Detected format: %s\n", format)
 fmt.Println(ast.String())
+```
+
+### Validate Schema
+
+```go
+// Parse schema
+ast, err := shape.Parse(parser.FormatJSONV, schemaInput)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Validate for unknown types and invalid constraints
+if err := shape.Validate(ast); err != nil {
+    log.Printf("Validation error: %v", err)
+}
 ```
 
 ### Walk the AST
@@ -194,6 +210,9 @@ func ParseAuto(input string) (ast.SchemaNode, parser.Format, error)
 
 // MustParse parses or panics (for tests/initialization)
 func MustParse(format parser.Format, input string) ast.SchemaNode
+
+// Validate validates a schema AST against default validation rules
+func Validate(node ast.SchemaNode) error
 ```
 
 ### AST Package
@@ -249,19 +268,129 @@ All errors include:
 - What was found
 - Context from the input
 
+## Schema Validation
+
+Shape includes a built-in validator to catch schema errors before runtime:
+
+```go
+ast, err := shape.Parse(parser.FormatJSONV, `{"id": UnknownType}`)
+if err != nil {
+    log.Fatal(err)
+}
+
+if err := shape.Validate(ast); err != nil {
+    fmt.Println(err)
+    // Output: validation error at line 1, column 8: unknown type: UnknownType
+}
+```
+
+### Supported Types
+
+The validator recognizes these built-in types:
+- `UUID`, `Email`, `URL`
+- `String`, `Integer`, `Float`, `Boolean`
+- `ISO-8601`, `Date`, `Time`, `DateTime`
+- `IPv4`, `IPv6`
+- `JSON`, `Base64`
+
+### Supported Functions
+
+The validator validates these built-in functions:
+- `String(min, max)` - String length constraints
+- `Integer(min, max)` - Integer range constraints
+- `Float(min, max)` - Float range constraints
+- `Enum(val1, val2, ...)` - Enumeration values
+- `Pattern(regex)` - Regular expression pattern
+- `Length(min, max)` - Generic length constraint
+- `Range(min, max)` - Generic range constraint
+
+All range functions support unbounded ranges with `+`:
+```go
+String(1, +)     // Minimum 1 character, no maximum
+Integer(18, +)   // Minimum 18, no maximum
+```
+
+### Validation Errors
+
+The validator catches:
+- **Unknown types**: Types not in the built-in type list
+- **Unknown functions**: Functions not in the built-in function list
+- **Invalid arguments**: Wrong number or type of arguments
+- **Invalid ranges**: `min > max` in range constraints
+- **Nested errors**: Errors in object properties and array elements
+
+### Custom Validators
+
+You can register custom types and functions for domain-specific validation:
+
+```go
+import "github.com/shapestone/shape/pkg/validator"
+
+// Create a validator and register custom types
+v := validator.NewValidator()
+v.RegisterType("SSN").
+  RegisterType("CreditCard").
+  RegisterType("PhoneNumber")
+
+// Register custom functions with validation rules
+v.RegisterFunction("Luhn", validator.FunctionRule{
+    MinArgs: 0,
+    MaxArgs: 0,
+}).RegisterFunction("ValidateChecksum", validator.FunctionRule{
+    MinArgs: 1,
+    MaxArgs: 1,
+})
+
+// Parse and validate with custom types/functions
+ast, err := shape.Parse(parser.FormatJSONV, `{"ssn": SSN, "card": Luhn()}`)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Validate using the custom validator
+if err := v.Validate(ast); err != nil {
+    log.Printf("Validation error: %v", err)
+}
+```
+
+**Method Chaining:**
+All registration methods return the validator for convenient chaining:
+```go
+v.RegisterType("CustomType1").
+  RegisterType("CustomType2").
+  RegisterFunction("CustomFunc", validator.FunctionRule{MinArgs: 0, MaxArgs: 1})
+```
+
+**Query Registration:**
+```go
+if v.IsTypeRegistered("SSN") {
+    // Type is registered
+}
+if v.IsFunctionRegistered("Luhn") {
+    // Function is registered
+}
+```
+
+**Note:** Built-in types and functions cannot be unregistered for safety.
+
 ## Performance
 
 Shape is designed for speed (benchmarked on Apple M1 Max):
 
-- **Simple schema** (2 properties): 2.7-4.8µs (CSVV fastest, JSONV slowest)
-- **Medium schema** (nested, 7 properties): 6.1-20.3µs (CSVV fastest, JSONV slowest)
-- **Large schema** (deep nesting, 25 properties): 20.3-72.6µs (CSVV fastest, JSONV slowest)
+- **Simple schema** (2 properties): 0.7-4.8µs (YAMLV fastest, JSONV slowest)
+- **Medium schema** (nested, 7 properties): 2.7-20.6µs (YAMLV fastest, JSONV slowest)
+- **Large schema** (deep nesting, 25 properties): 8.9-70µs (YAMLV fastest, JSONV slowest)
 
 **Format Performance Ranking** (fastest to slowest):
-1. CSVV (2-3.6x faster than JSONV)
-2. XMLV, PropsV, TEXTV (mid-range, similar performance)
-3. YAMLV (mid-range)
+1. **YAMLV** (6.8-7.9x faster than JSONV!) - Native parser in v0.2.0
+2. CSVV (2.4-3.2x faster than JSONV)
+3. XMLV, PropsV, TEXTV (mid-range, similar performance)
 4. JSONV (most allocations, slowest)
+
+**v0.2.0 Performance Improvements:**
+- YAMLV now 5-6x faster with native line-based parser
+- 3-5x memory reduction for YAMLV
+- AST string interning reduces allocations
 
 See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for detailed benchmark results and analysis.
 
@@ -361,12 +490,12 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 - Format auto-detection (JSONV only)
 - Comprehensive testing
 
-### v0.2.0 (In Development)
+### v0.2.0 (Completed)
 - Format auto-detection for all 6 formats ✅
 - Replace YAMLV yaml.v3 with native parser ✅
-- Schema validation
-- AST optimization
-- Custom validator registration
+- Schema validation ✅
+- AST optimization (string interning) ✅
+- Custom validator registration ✅
 
 ### v1.0.0 (Future)
 - Stable API

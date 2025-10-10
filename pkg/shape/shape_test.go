@@ -513,3 +513,153 @@ func TestParse_ComplexExample(t *testing.T) {
 		t.Errorf("metadata has %d properties, want 2", len(metadataObj.Properties()))
 	}
 }
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name    string
+		format  parser.Format
+		input   string
+		wantErr bool
+		errMsg  string
+	}{
+		{
+			name:    "valid simple schema",
+			format:  parser.FormatJSONV,
+			input:   `{"id": UUID, "name": String}`,
+			wantErr: false,
+		},
+		{
+			name:    "valid function with args",
+			format:  parser.FormatJSONV,
+			input:   `{"name": String(1, 100)}`,
+			wantErr: false,
+		},
+		{
+			name:    "valid complex schema",
+			format:  parser.FormatJSONV,
+			input:   `{"user": {"id": UUID, "age": Integer(18, 120)}}`,
+			wantErr: false,
+		},
+		{
+			name:    "valid array",
+			format:  parser.FormatJSONV,
+			input:   `[UUID]`,
+			wantErr: false,
+		},
+		{
+			name:    "unknown type",
+			format:  parser.FormatJSONV,
+			input:   `{"id": UnknownType}`,
+			wantErr: true,
+			errMsg:  "unknown type",
+		},
+		{
+			name:    "unknown function",
+			format:  parser.FormatJSONV,
+			input:   `{"name": UnknownFunc(1, 2)}`,
+			wantErr: true,
+			errMsg:  "unknown function",
+		},
+		{
+			name:    "invalid function args - min > max",
+			format:  parser.FormatJSONV,
+			input:   `{"name": String(100, 1)}`,
+			wantErr: true,
+			errMsg:  "min (100) must be less than or equal to max (1)",
+		},
+		{
+			name:    "invalid function args - too few",
+			format:  parser.FormatJSONV,
+			input:   `{"status": Enum()}`,
+			wantErr: true,
+			errMsg:  "requires at least 1 arguments",
+		},
+		{
+			name:    "invalid nested property",
+			format:  parser.FormatJSONV,
+			input:   `{"user": {"id": InvalidType}}`,
+			wantErr: true,
+			errMsg:  "unknown type",
+		},
+		{
+			name:    "invalid array element",
+			format:  parser.FormatJSONV,
+			input:   `[InvalidType]`,
+			wantErr: true,
+			errMsg:  "unknown type",
+		},
+		{
+			name:    "valid YAMLV schema",
+			format:  parser.FormatYAMLV,
+			input:   "id: UUID\nname: String(1, 100)",
+			wantErr: false,
+		},
+		{
+			name:    "invalid YAMLV schema",
+			format:  parser.FormatYAMLV,
+			input:   "id: BadType",
+			wantErr: true,
+			errMsg:  "unknown type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			node, err := Parse(tt.format, tt.input)
+			if err != nil {
+				t.Fatalf("Parse() error = %v", err)
+			}
+
+			err = Validate(node)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr && tt.errMsg != "" {
+				if err == nil {
+					t.Errorf("Validate() expected error containing %q, got nil", tt.errMsg)
+				} else if !contains(err.Error(), tt.errMsg) {
+					t.Errorf("Validate() error = %q, want error containing %q", err.Error(), tt.errMsg)
+				}
+			}
+		})
+	}
+}
+
+func TestValidate_ComplexSchema(t *testing.T) {
+	input := `{
+		"user": {
+			"id": UUID,
+			"username": String(3, 20),
+			"email": Email,
+			"age": Integer(18, 120),
+			"status": Enum("active", "inactive", "banned"),
+			"roles": [String(1, 50)]
+		}
+	}`
+
+	node, err := Parse(parser.FormatJSONV, input)
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+
+	err = Validate(node)
+	if err != nil {
+		t.Errorf("Validate() error = %v, want nil", err)
+	}
+}
+
+// Helper function to check if a string contains a substring
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && findSubstring(s, substr))
+}
+
+func findSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
