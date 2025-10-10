@@ -319,6 +319,60 @@ The validator catches:
 - **Invalid ranges**: `min > max` in range constraints
 - **Nested errors**: Errors in object properties and array elements
 
+### Custom Validators
+
+You can register custom types and functions for domain-specific validation:
+
+```go
+import "github.com/shapestone/shape/pkg/validator"
+
+// Create a validator and register custom types
+v := validator.NewValidator()
+v.RegisterType("SSN").
+  RegisterType("CreditCard").
+  RegisterType("PhoneNumber")
+
+// Register custom functions with validation rules
+v.RegisterFunction("Luhn", validator.FunctionRule{
+    MinArgs: 0,
+    MaxArgs: 0,
+}).RegisterFunction("ValidateChecksum", validator.FunctionRule{
+    MinArgs: 1,
+    MaxArgs: 1,
+})
+
+// Parse and validate with custom types/functions
+ast, err := shape.Parse(parser.FormatJSONV, `{"ssn": SSN, "card": Luhn()}`)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Validate using the custom validator
+if err := v.Validate(ast); err != nil {
+    log.Printf("Validation error: %v", err)
+}
+```
+
+**Method Chaining:**
+All registration methods return the validator for convenient chaining:
+```go
+v.RegisterType("CustomType1").
+  RegisterType("CustomType2").
+  RegisterFunction("CustomFunc", validator.FunctionRule{MinArgs: 0, MaxArgs: 1})
+```
+
+**Query Registration:**
+```go
+if v.IsTypeRegistered("SSN") {
+    // Type is registered
+}
+if v.IsFunctionRegistered("Luhn") {
+    // Function is registered
+}
+```
+
+**Note:** Built-in types and functions cannot be unregistered for safety.
+
 ## Performance
 
 Shape is designed for speed (benchmarked on Apple M1 Max):
@@ -436,12 +490,12 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 - Format auto-detection (JSONV only)
 - Comprehensive testing
 
-### v0.2.0 (In Development)
+### v0.2.0 (Completed)
 - Format auto-detection for all 6 formats ✅
 - Replace YAMLV yaml.v3 with native parser ✅
 - Schema validation ✅
 - AST optimization (string interning) ✅
-- Custom validator registration
+- Custom validator registration ✅
 
 ### v1.0.0 (Future)
 - Stable API
