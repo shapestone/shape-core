@@ -145,10 +145,11 @@ user:
 ### TEXTV (Text Validation)
 
 ```textv
-User Record:
-  ID: UUID
-  Name: String(1, 100)
-  Age: Integer(1, 120)
+# Simple line-oriented format with dot notation
+user.id: UUID
+user.name: String(1, 100)
+user.age: Integer(1, 120)
+user.tags[]: String(1, 30)
 ```
 
 ## AST Structure
@@ -250,15 +251,23 @@ All errors include:
 
 ## Performance
 
-Shape is designed for speed:
+Shape is designed for speed (benchmarked on Apple M1 Max):
 
-- **Simple schema** (< 10 nodes): < 100μs
-- **Medium schema** (10-50 nodes): < 500μs
-- **Large schema** (50-200 nodes): < 2ms
+- **Simple schema** (2 properties): 2.7-4.8µs (CSVV fastest, JSONV slowest)
+- **Medium schema** (nested, 7 properties): 6.1-20.3µs (CSVV fastest, JSONV slowest)
+- **Large schema** (deep nesting, 25 properties): 20.3-72.6µs (CSVV fastest, JSONV slowest)
+
+**Format Performance Ranking** (fastest to slowest):
+1. CSVV (2-3.6x faster than JSONV)
+2. XMLV, PropsV, TEXTV (mid-range, similar performance)
+3. YAMLV (mid-range)
+4. JSONV (most allocations, slowest)
+
+See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for detailed benchmark results and analysis.
 
 Run benchmarks:
 ```bash
-go test -bench=. ./pkg/shape
+go test -bench=. -benchmem ./pkg/shape
 ```
 
 ## Testing

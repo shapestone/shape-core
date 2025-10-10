@@ -77,7 +77,7 @@ func TestParse(t *testing.T) {
 		},
 		{
 			name:    "unsupported format",
-			format:  parser.FormatYAMLV,
+			format:  parser.FormatUnknown,
 			input:   `user:\n  id: UUID`,
 			wantErr: true,
 		},
@@ -151,6 +151,93 @@ String(3,20),Integer(18,120)`,
 				}
 				if fn.Name() != "String" {
 					t.Errorf("fn.Name() = %q, want %q", fn.Name(), "String")
+				}
+			},
+		},
+		{
+			name:   "YAMLV simple",
+			format: parser.FormatYAMLV,
+			input: `id: UUID
+name: String`,
+			wantErr: false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				if _, ok := obj.GetProperty("id"); !ok {
+					t.Error("property 'id' not found")
+				}
+				if _, ok := obj.GetProperty("name"); !ok {
+					t.Error("property 'name' not found")
+				}
+			},
+		},
+		{
+			name:   "YAMLV with nested",
+			format: parser.FormatYAMLV,
+			input: `user:
+  id: UUID
+  name: String(1, 100)`,
+			wantErr: false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				user, ok := obj.GetProperty("user")
+				if !ok {
+					t.Fatal("property 'user' not found")
+				}
+				userObj, ok := user.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode for 'user', got %T", user)
+				}
+				if _, ok := userObj.GetProperty("id"); !ok {
+					t.Error("property 'user.id' not found")
+				}
+			},
+		},
+		{
+			name:   "TEXTV simple",
+			format: parser.FormatTEXTV,
+			input: `id: UUID
+name: String`,
+			wantErr: false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				if _, ok := obj.GetProperty("id"); !ok {
+					t.Error("property 'id' not found")
+				}
+				if _, ok := obj.GetProperty("name"); !ok {
+					t.Error("property 'name' not found")
+				}
+			},
+		},
+		{
+			name:   "TEXTV with nested",
+			format: parser.FormatTEXTV,
+			input: `user.id: UUID
+user.name: String(1, 100)`,
+			wantErr: false,
+			check: func(t *testing.T, node ast.SchemaNode) {
+				obj, ok := node.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode, got %T", node)
+				}
+				user, ok := obj.GetProperty("user")
+				if !ok {
+					t.Fatal("property 'user' not found")
+				}
+				userObj, ok := user.(*ast.ObjectNode)
+				if !ok {
+					t.Fatalf("expected ObjectNode for 'user', got %T", user)
+				}
+				if _, ok := userObj.GetProperty("id"); !ok {
+					t.Error("property 'user.id' not found")
 				}
 			},
 		},

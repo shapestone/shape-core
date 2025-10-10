@@ -492,11 +492,14 @@ internal/parser/format_test.go  # More tests
 
 ### 4.1 YAMLV Parser (12-16 hours)
 
-**Approach Decision:** Evaluate using `gopkg.in/yaml.v3` vs custom parser
+**Approach Decision:** Using `gopkg.in/yaml.v3` for v0.1.0
+
+**Note:** For v0.1.0, we use gopkg.in/yaml.v3 to parse YAML structure, then convert to our AST.
+**Future Enhancement (v0.2.0+):** Replace with native Shape YAML parser using the tokenizer framework for consistency and zero external dependencies.
 
 **Tasks:**
 - Evaluate yaml.v3 library
-- Implement YAMLV parser (likely hybrid: yaml.v3 + custom validation overlay)
+- Implement YAMLV parser (hybrid: yaml.v3 + custom validation overlay)
 - Create test data
 - Write tests
 
