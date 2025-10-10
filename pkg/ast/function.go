@@ -14,9 +14,10 @@ type FunctionNode struct {
 }
 
 // NewFunctionNode creates a new function node.
+// The function name is automatically interned to reduce memory allocations.
 func NewFunctionNode(name string, arguments []interface{}, pos Position) *FunctionNode {
 	return &FunctionNode{
-		name:      name,
+		name:      InternString(name),
 		arguments: arguments,
 		position:  pos,
 	}

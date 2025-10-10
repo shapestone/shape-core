@@ -7,9 +7,10 @@ type TypeNode struct {
 }
 
 // NewTypeNode creates a new type node.
+// The type name is automatically interned to reduce memory allocations.
 func NewTypeNode(typeName string, pos Position) *TypeNode {
 	return &TypeNode{
-		typeName: typeName,
+		typeName: InternString(typeName),
 		position: pos,
 	}
 }

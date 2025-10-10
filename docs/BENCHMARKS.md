@@ -14,92 +14,103 @@ This document contains performance benchmarks for all 6 format parsers in the Sh
 
 | Format | Time/op | Memory | Allocs |
 |--------|---------|--------|--------|
+| YAMLV  | 0.7µs   | 1.0KB  | 24     |
 | CSVV   | 2.7µs   | 4.2KB  | 87     |
 | XMLV   | 3.2µs   | 4.0KB  | 97     |
-| PropsV | 3.3µs   | 5.4KB  | 100    |
+| PropsV | 3.2µs   | 5.4KB  | 100    |
 | TEXTV  | 3.7µs   | 6.6KB  | 117    |
-| YAMLV  | 4.7µs   | 8.7KB  | 79     |
 | JSONV  | 4.8µs   | 9.5KB  | 157    |
 
-**Winner:** CSVV (1.8x faster than JSONV)
+**Winner:** YAMLV (6.8x faster than JSONV!)
 
 ### Medium Schemas (nested objects, arrays, ~7 properties)
 
 | Format | Time/op | Memory | Allocs |
 |--------|---------|--------|--------|
-| CSVV   | 6.1µs   | 10.6KB | 211    |
-| PropsV | 12.2µs  | 19.0KB | 338    |
-| XMLV   | 12.2µs  | 16.0KB | 373    |
-| TEXTV  | 12.7µs  | 23.0KB | 395    |
-| YAMLV  | 14.9µs  | 16.2KB | 249    |
-| JSONV  | 20.3µs  | 40.7KB | 657    |
+| YAMLV  | 2.7µs   | 4.1KB  | 80     |
+| CSVV   | 6.6µs   | 10.6KB | 211    |
+| PropsV | 12.1µs  | 19.0KB | 338    |
+| XMLV   | 12.6µs  | 16.0KB | 373    |
+| TEXTV  | 13.0µs  | 23.0KB | 395    |
+| JSONV  | 20.6µs  | 40.7KB | 657    |
 
-**Winner:** CSVV (3.3x faster than JSONV)
+**Winner:** YAMLV (7.6x faster than JSONV!)
 
 ### Large Schemas (deeply nested, ~25 properties)
 
 | Format | Time/op | Memory  | Allocs |
 |--------|---------|---------|--------|
-| CSVV   | 20.3µs  | 35.7KB  | 683    |
-| XMLV   | 42.3µs  | 53.9KB  | 1243   |
-| PropsV | 42.8µs  | 69.8KB  | 1151   |
-| YAMLV  | 47.1µs  | 37.7KB  | 727    |
-| TEXTV  | 48.5µs  | 83.4KB  | 1344   |
-| JSONV  | 72.6µs  | 134.2KB | 2148   |
+| YAMLV  | 8.9µs   | 11.8KB  | 242    |
+| CSVV   | 21.6µs  | 35.7KB  | 683    |
+| PropsV | 43.3µs  | 69.8KB  | 1151   |
+| XMLV   | 44.3µs  | 53.9KB  | 1243   |
+| TEXTV  | 52.5µs  | 83.4KB  | 1344   |
+| JSONV  | 70.0µs  | 134.2KB | 2148   |
 
-**Winner:** CSVV (3.6x faster than JSONV)
+**Winner:** YAMLV (7.9x faster than JSONV!)
 
 ### ParseAuto Performance (format detection overhead)
 
 | Format | Time/op | Memory | Allocs |
 |--------|---------|--------|--------|
-| YAMLV  | 1.9µs   | 2.6KB  | 52     |
-| JSONV  | 4.9µs   | 9.5KB  | 157    |
+| YAMLV  | 0.8µs   | 1.0KB  | 26     |
+| JSONV  | 5.0µs   | 9.5KB  | 157    |
 
-**Note:** ParseAuto adds minimal overhead (~150ns) compared to direct Parse calls.
+**Note:** ParseAuto adds minimal overhead (~100-150ns) compared to direct Parse calls.
 
 ## Analysis
 
 ### Performance Trends
 
-1. **CSVV is consistently fastest** across all schema sizes (2-3.6x faster than JSONV)
+1. **YAMLV is now the fastest parser!** (v0.2.0 native parser)
+   - 6.8-7.9x faster than JSONV across all schema sizes
+   - 2.4-3.0x faster than CSVV (previous champion)
+   - Line-based parsing with minimal allocations
+   - Native implementation without external dependencies
+
+2. **CSVV remains very fast** for simple schemas
+   - Second fastest parser overall
    - Simple structure benefits from straightforward row/column parsing
    - Minimal nesting complexity
 
-2. **JSONV is consistently slowest** with highest memory usage
+3. **JSONV is slowest** with highest memory usage
    - Most complex tokenization (strings, numbers, nested structures)
    - Highest allocation count due to recursive parsing
+   - Still acceptable performance for most use cases (5-70µs)
 
-3. **Mid-range formats** (PropsV, XMLV, TEXTV, YAMLV) have similar performance
-   - PropsV: 12-43µs depending on complexity
-   - XMLV: 12-42µs depending on complexity
-   - TEXTV: 13-49µs depending on complexity
-   - YAMLV: 15-47µs depending on complexity
+4. **Mid-range formats** (PropsV, XMLV, TEXTV) have similar performance
+   - PropsV: 3.2-43µs depending on complexity
+   - XMLV: 3.2-44µs depending on complexity
+   - TEXTV: 3.7-52µs depending on complexity
 
-4. **Memory usage scales with schema complexity**
-   - Simple: 4-10KB
-   - Medium: 11-41KB
-   - Large: 36-134KB
+5. **Memory usage scales with schema complexity**
+   - Simple: 1-10KB
+   - Medium: 4-41KB
+   - Large: 12-134KB
 
-5. **Allocation counts correlate with parsing complexity**
-   - CSVV has fewest allocations (linear structure)
-   - JSONV has most allocations (recursive structure)
+6. **Allocation counts vary by parser design**
+   - YAMLV has fewest allocations (24-242)
+   - CSVV has moderate allocations (87-683)
+   - JSONV has most allocations (157-2148)
 
 ### Recommendations
 
 **For Performance-Critical Applications:**
-- Use **CSVV** for flat schemas (fastest, lowest memory)
-- Use **XMLV or YAMLV** for nested schemas (good balance)
-- Avoid JSONV for high-throughput scenarios
+- Use **YAMLV** for all schema types (fastest, lowest memory, cleanest syntax!)
+- Use **CSVV** for flat schemas if YAML syntax is not preferred
+- Use **XMLV** for nested schemas if XML is required
+- JSONV is acceptable for most use cases despite being slowest
 
 **For Developer Experience:**
+- Use **YAMLV** for readable nested schemas (best performance + clean syntax)
 - Use **JSONV** for complex nested schemas (most familiar syntax)
-- Use **YAMLV** for readable nested schemas (clean syntax)
 - Use **TEXTV** for simple flat schemas (minimal syntax)
+- Use **CSVV** for tabular data representation
 
 **For Auto-Detection:**
-- ParseAuto adds minimal overhead (~150ns)
-- Safe to use in most scenarios without performance concerns
+- ParseAuto adds minimal overhead (~100-150ns)
+- Safe to use in all scenarios without performance concerns
+- YAMLV detection is extremely fast (<1µs)
 
 ## Running Benchmarks
 
@@ -131,10 +142,23 @@ Benchmarks are run with:
 - Error checking to ensure parsing succeeds
 - Identical schemas across formats (where possible)
 
+## v0.2.0 Optimizations Completed
+
+1. **YAMLV Native Parser** ✅ - Replaced yaml.v3 with custom line-based parser
+   - 5-6x performance improvement across all schema sizes
+   - 3-5x reduction in memory usage
+   - 2-3x reduction in allocations
+   - Now the fastest parser in Shape!
+
+2. **AST String Interning** ✅ - Intern common type and function names
+   - Reduces string allocations for repeated type names
+   - Pre-populates 15 common types (UUID, Email, String, etc.)
+   - Thread-safe with RWMutex for concurrent access
+
 ## Future Optimization Opportunities
 
 1. **JSONV:** Reduce allocations in recursive parsing
 2. **TEXTV:** Optimize string splitting for dot notation
-3. **YAMLV:** Replace yaml.v3 with native parser (v0.2.0+)
-4. **All formats:** Pool commonly allocated objects
-5. **Tokenizer:** Optimize rune processing in hot paths
+3. **All formats:** Consider object pooling for AST nodes
+4. **Tokenizer:** Optimize rune processing in hot paths
+5. **Small Object Optimization:** Use slices instead of maps for objects with few properties

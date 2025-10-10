@@ -323,15 +323,20 @@ The validator catches:
 
 Shape is designed for speed (benchmarked on Apple M1 Max):
 
-- **Simple schema** (2 properties): 2.7-4.8µs (CSVV fastest, JSONV slowest)
-- **Medium schema** (nested, 7 properties): 6.1-20.3µs (CSVV fastest, JSONV slowest)
-- **Large schema** (deep nesting, 25 properties): 20.3-72.6µs (CSVV fastest, JSONV slowest)
+- **Simple schema** (2 properties): 0.7-4.8µs (YAMLV fastest, JSONV slowest)
+- **Medium schema** (nested, 7 properties): 2.7-20.6µs (YAMLV fastest, JSONV slowest)
+- **Large schema** (deep nesting, 25 properties): 8.9-70µs (YAMLV fastest, JSONV slowest)
 
 **Format Performance Ranking** (fastest to slowest):
-1. CSVV (2-3.6x faster than JSONV)
-2. XMLV, PropsV, TEXTV (mid-range, similar performance)
-3. YAMLV (mid-range)
+1. **YAMLV** (6.8-7.9x faster than JSONV!) - Native parser in v0.2.0
+2. CSVV (2.4-3.2x faster than JSONV)
+3. XMLV, PropsV, TEXTV (mid-range, similar performance)
 4. JSONV (most allocations, slowest)
+
+**v0.2.0 Performance Improvements:**
+- YAMLV now 5-6x faster with native line-based parser
+- 3-5x memory reduction for YAMLV
+- AST string interning reduces allocations
 
 See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) for detailed benchmark results and analysis.
 
@@ -435,7 +440,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 - Format auto-detection for all 6 formats ✅
 - Replace YAMLV yaml.v3 with native parser ✅
 - Schema validation ✅
-- AST optimization
+- AST optimization (string interning) ✅
 - Custom validator registration
 
 ### v1.0.0 (Future)
