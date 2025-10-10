@@ -1,6 +1,6 @@
 # Shape - Multi-Format Validation Schema Parser
 
-**Version:** 0.1.0 (In Development)  
+**Version:** 0.2.2
 **Repository:** github.com/shapestone/shape
 
 Shape is a production-ready parser library that converts validation schema formats (JSONV, XMLV, PropsV, CSVV, YAMLV, TEXTV) into a unified Abstract Syntax Tree (AST). Shape serves as the foundational parsing layer for the data-validator ecosystem.
@@ -490,12 +490,13 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 - Format auto-detection (JSONV only)
 - Comprehensive testing
 
-### v0.2.0 (Completed)
+### v0.2.0-v0.2.2 (Completed)
 - Format auto-detection for all 6 formats ✅
-- Replace YAMLV yaml.v3 with native parser ✅
+- Replace YAMLV yaml.v3 with native parser (5-6x performance improvement) ✅
 - Schema validation ✅
 - AST optimization (string interning) ✅
 - Custom validator registration ✅
+- Comprehensive YAMLV test coverage (43.2% → 95.9%) ✅
 
 ### v1.0.0 (Future)
 - Stable API
