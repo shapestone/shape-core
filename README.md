@@ -10,6 +10,7 @@ Shape is a production-ready parser library that converts validation schema forma
 - **6 Format Support:** JSONV, XMLV, PropsV, CSVV, YAMLV, TEXTV
 - **Unified AST:** All formats produce the same AST structure
 - **Format Auto-Detection:** Automatically detect and parse formats
+- **Schema Validation:** Validate schemas for unknown types, invalid functions, and constraint violations
 - **Detailed Error Messages:** Line and column numbers for all parse errors
 - **Self-Contained Library:** Zero external dependencies except google/uuid
 - **Embedded Tokenization:** Built-in tokenization framework, no external tokenizer dependencies
@@ -67,6 +68,21 @@ if err != nil {
 
 fmt.Printf("Detected format: %s\n", format)
 fmt.Println(ast.String())
+```
+
+### Validate Schema
+
+```go
+// Parse schema
+ast, err := shape.Parse(parser.FormatJSONV, schemaInput)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Validate for unknown types and invalid constraints
+if err := shape.Validate(ast); err != nil {
+    log.Printf("Validation error: %v", err)
+}
 ```
 
 ### Walk the AST
@@ -194,6 +210,9 @@ func ParseAuto(input string) (ast.SchemaNode, parser.Format, error)
 
 // MustParse parses or panics (for tests/initialization)
 func MustParse(format parser.Format, input string) ast.SchemaNode
+
+// Validate validates a schema AST against default validation rules
+func Validate(node ast.SchemaNode) error
 ```
 
 ### AST Package
@@ -248,6 +267,57 @@ All errors include:
 - What was expected
 - What was found
 - Context from the input
+
+## Schema Validation
+
+Shape includes a built-in validator to catch schema errors before runtime:
+
+```go
+ast, err := shape.Parse(parser.FormatJSONV, `{"id": UnknownType}`)
+if err != nil {
+    log.Fatal(err)
+}
+
+if err := shape.Validate(ast); err != nil {
+    fmt.Println(err)
+    // Output: validation error at line 1, column 8: unknown type: UnknownType
+}
+```
+
+### Supported Types
+
+The validator recognizes these built-in types:
+- `UUID`, `Email`, `URL`
+- `String`, `Integer`, `Float`, `Boolean`
+- `ISO-8601`, `Date`, `Time`, `DateTime`
+- `IPv4`, `IPv6`
+- `JSON`, `Base64`
+
+### Supported Functions
+
+The validator validates these built-in functions:
+- `String(min, max)` - String length constraints
+- `Integer(min, max)` - Integer range constraints
+- `Float(min, max)` - Float range constraints
+- `Enum(val1, val2, ...)` - Enumeration values
+- `Pattern(regex)` - Regular expression pattern
+- `Length(min, max)` - Generic length constraint
+- `Range(min, max)` - Generic range constraint
+
+All range functions support unbounded ranges with `+`:
+```go
+String(1, +)     // Minimum 1 character, no maximum
+Integer(18, +)   // Minimum 18, no maximum
+```
+
+### Validation Errors
+
+The validator catches:
+- **Unknown types**: Types not in the built-in type list
+- **Unknown functions**: Functions not in the built-in function list
+- **Invalid arguments**: Wrong number or type of arguments
+- **Invalid ranges**: `min > max` in range constraints
+- **Nested errors**: Errors in object properties and array elements
 
 ## Performance
 
@@ -364,7 +434,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 ### v0.2.0 (In Development)
 - Format auto-detection for all 6 formats ✅
 - Replace YAMLV yaml.v3 with native parser ✅
-- Schema validation
+- Schema validation ✅
 - AST optimization
 - Custom validator registration
 
