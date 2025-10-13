@@ -1,6 +1,6 @@
 # Shape - Multi-Format Validation Schema Parser
 
-**Version:** 0.2.2
+**Version:** 0.3.0
 **Repository:** github.com/shapestone/shape
 
 Shape is a production-ready parser library that converts validation schema formats (JSONV, XMLV, PropsV, CSVV, YAMLV, TEXTV) into a unified Abstract Syntax Tree (AST). Shape serves as the foundational parsing layer for the data-validator ecosystem.
@@ -268,9 +268,121 @@ All errors include:
 - What was found
 - Context from the input
 
-## Schema Validation
+## Semantic Validation
 
-Shape includes a built-in validator to catch schema errors before runtime:
+Shape v0.3.0+ includes comprehensive semantic validation to catch schema errors early with rich error messages and source context.
+
+### Quick Start
+
+```go
+import "github.com/shapestone/shape/pkg/shape"
+
+schema := `{"id": UUID, "age": Integer(1, 120)}`
+ast, err := shape.Parse(parser.FormatJSONV, schema)
+if err != nil {
+    log.Fatal(err)
+}
+
+// ValidateAll returns all errors found (not just the first one)
+result := shape.ValidateAll(ast, schema)
+if !result.Valid {
+    fmt.Println(result.FormatColored())
+}
+```
+
+### What is Validated
+
+- **Type References**: All type names must be registered (UUID, Email, etc.)
+- **Function References**: All function names must be registered (Integer, String, etc.)
+- **Function Arguments**: Argument counts must match function definitions
+- **Argument Values**: min ≤ max for range functions
+
+### Rich Error Output
+
+Shape provides multiple output formats:
+
+```go
+// Colored terminal output (default)
+fmt.Println(result.FormatColored())
+
+// Plain text (for logs/files)
+fmt.Println(result.FormatPlain())
+
+// JSON (for programmatic use)
+jsonBytes, _ := result.ToJSON()
+```
+
+Example error output:
+
+```
+Found 2 validation errors:
+
+Error 1:
+Line 1, Column 37 ($.badargs)
+ERROR [INVALID_ARG_COUNT]: Integer accepts at most 2 arguments, got 3
+
+  >  1 | {"unknown": UnknownType, "badargs": Integer(1, 100, 200)}
+      |                                     ^
+
+HINT: Expected Integer to have between 1 and 2 arguments
+
+---
+
+Error 2:
+Line 1, Column 13 ($.unknown)
+ERROR [UNKNOWN_TYPE]: unknown type: UnknownType
+
+  >  1 | {"unknown": UnknownType, "badargs": Integer(1, 100, 200)}
+      |             ^
+
+HINT: Available types include: Base64, Boolean, Date, DateTime, Email, Float, ...
+```
+
+### CLI Tool
+
+Shape includes a command-line tool for validating schema files:
+
+```bash
+# Install
+go install github.com/shapestone/shape/cmd/shape-validate@latest
+
+# Validate a single file
+shape-validate schema.jsonv
+
+# Validate multiple files
+shape-validate schema1.jsonv schema2.xmlv
+
+# JSON output
+shape-validate -o json schema.jsonv
+
+# Register custom types
+shape-validate --register-type SSN,CreditCard schema.jsonv
+
+# Quiet mode (exit code only)
+shape-validate -o quiet schema.jsonv && echo "Valid!"
+```
+
+### Custom Types and Functions
+
+You can register custom types and functions for domain-specific validation:
+
+```go
+import "github.com/shapestone/shape/pkg/validator"
+
+v := validator.NewSchemaValidator()
+v.RegisterType("SSN", validator.TypeDescriptor{
+    Name:        "SSN",
+    Description: "Social Security Number",
+})
+
+schema := `{"ssn": SSN}`
+ast, _ := shape.Parse(parser.FormatJSONV, schema)
+result := v.ValidateAll(ast, schema)
+```
+
+### Legacy Validation API
+
+Shape also includes a simpler validator that returns the first error only:
 
 ```go
 ast, err := shape.Parse(parser.FormatJSONV, `{"id": UnknownType}`)
@@ -497,6 +609,14 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 - AST optimization (string interning) ✅
 - Custom validator registration ✅
 - Comprehensive YAMLV test coverage (43.2% → 95.9%) ✅
+
+### v0.3.0 (Current)
+- Comprehensive semantic validation with rich error messages ✅
+- Source context in validation errors ✅
+- Multiple output formats (colored, plain, JSON) ✅
+- CLI tool (shape-validate) ✅
+- Integration tests for all formats ✅
+- Validation benchmarks (<1ms overhead) ✅
 
 ### v1.0.0 (Future)
 - Stable API

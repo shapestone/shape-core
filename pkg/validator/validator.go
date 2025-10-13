@@ -15,7 +15,7 @@ type Validator struct {
 // FunctionRule defines validation rules for a function.
 type FunctionRule struct {
 	MinArgs      int
-	MaxArgs      int  // -1 means unlimited
+	MaxArgs      int // -1 means unlimited
 	ValidateArgs func(args []interface{}) error
 }
 
@@ -176,17 +176,6 @@ func (v *Validator) VisitArray(node *ast.ArrayNode) error {
 	return node.ElementSchema().Accept(v)
 }
 
-// ValidationError represents a schema validation error.
-type ValidationError struct {
-	Position ast.Position
-	Message  string
-}
-
-func (e *ValidationError) Error() string {
-	return fmt.Sprintf("validation error at line %d, column %d: %s",
-		e.Position.Line, e.Position.Column, e.Message)
-}
-
 // defaultTypes returns the default set of known types.
 func defaultTypes() map[string]bool {
 	return map[string]bool{
@@ -251,55 +240,4 @@ func defaultFunctions() map[string]FunctionRule {
 			ValidateArgs: validateRangeArgs,
 		},
 	}
-}
-
-// validateRangeArgs validates range arguments (min, max) or (min+).
-func validateRangeArgs(args []interface{}) error {
-	if len(args) == 1 {
-		// Single argument must be a number
-		switch args[0].(type) {
-		case int64, float64:
-			return nil
-		default:
-			return fmt.Errorf("argument must be a number")
-		}
-	}
-
-	if len(args) == 2 {
-		// Two arguments: (min, max) or (min, "+")
-		var min, max int64
-		var unbounded bool
-
-		// First argument must be a number
-		switch v := args[0].(type) {
-		case int64:
-			min = v
-		case float64:
-			min = int64(v)
-		default:
-			return fmt.Errorf("first argument must be a number")
-		}
-
-		// Second argument: number or "+"
-		switch v := args[1].(type) {
-		case int64:
-			max = v
-		case float64:
-			max = int64(v)
-		case string:
-			if v != "+" {
-				return fmt.Errorf("second argument must be a number or '+'")
-			}
-			unbounded = true
-		default:
-			return fmt.Errorf("second argument must be a number or '+'")
-		}
-
-		// If bounded, check min <= max
-		if !unbounded && min > max {
-			return fmt.Errorf("min (%d) must be less than or equal to max (%d)", min, max)
-		}
-	}
-
-	return nil
 }

@@ -107,3 +107,23 @@ func Validate(node ast.SchemaNode) error {
 	v := validator.NewValidator()
 	return v.Validate(node)
 }
+
+// ValidateAll validates a schema AST for semantic correctness and returns all errors found.
+// The sourceText parameter is optional but provides better error messages with source context.
+// Returns a ValidationResult with all errors found during validation.
+//
+// Example:
+//
+//	input := `{"id": UUID, "name": UnknownType}`
+//	node, err := shape.Parse(parser.FormatJSONV, input)
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	result := shape.ValidateAll(node, input)
+//	if !result.Valid {
+//	    fmt.Println(result.FormatColored())
+//	}
+func ValidateAll(node ast.SchemaNode, sourceText ...string) *validator.ValidationResult {
+	v := validator.NewSchemaValidator()
+	return v.ValidateAll(node, sourceText...)
+}

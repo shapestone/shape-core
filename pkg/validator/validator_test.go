@@ -147,7 +147,7 @@ func TestValidator_ValidObject(t *testing.T) {
 		{
 			name: "object with unknown type",
 			props: map[string]ast.SchemaNode{
-				"id":   ast.NewTypeNode("UnknownType", ast.Position{Line: 1, Column: 1}),
+				"id": ast.NewTypeNode("UnknownType", ast.Position{Line: 1, Column: 1}),
 			},
 			wantErr: true,
 			errMsg:  "unknown type",
@@ -482,10 +482,10 @@ func TestValidator_CustomTypesAndFunctions(t *testing.T) {
 	// Create a schema using custom types and functions
 	schema := ast.NewObjectNode(
 		map[string]ast.SchemaNode{
-			"id":         ast.NewTypeNode("UUID", ast.Position{Line: 1, Column: 1}), // Built-in
-			"ssn":        ast.NewTypeNode("SSN", ast.Position{Line: 2, Column: 1}),  // Custom
-			"card":       ast.NewTypeNode("CreditCard", ast.Position{Line: 3, Column: 1}), // Custom
-			"validatedSSN": ast.NewFunctionNode("ValidateSSN", []interface{}{}, ast.Position{Line: 4, Column: 1}), // Custom
+			"id":            ast.NewTypeNode("UUID", ast.Position{Line: 1, Column: 1}),                                    // Built-in
+			"ssn":           ast.NewTypeNode("SSN", ast.Position{Line: 2, Column: 1}),                                     // Custom
+			"card":          ast.NewTypeNode("CreditCard", ast.Position{Line: 3, Column: 1}),                              // Custom
+			"validatedSSN":  ast.NewFunctionNode("ValidateSSN", []interface{}{}, ast.Position{Line: 4, Column: 1}),        // Custom
 			"validatedCard": ast.NewFunctionNode("ValidateCreditCard", []interface{}{}, ast.Position{Line: 5, Column: 1}), // Custom
 		},
 		ast.Position{Line: 1, Column: 1},
