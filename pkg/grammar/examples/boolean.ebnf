@@ -1,0 +1,4 @@
+// Simple Boolean Expression Grammar
+// Demonstrates basic alternation and terminals
+
+BoolExpr = "true" | "false" ;

@@ -1,0 +1,31 @@
+// Shape Validation Format Grammar
+// Demonstrates the actual Shape validation DSL syntax
+
+Schema = Value ;
+
+Value = Literal | Type | Function | Object | Array ;
+
+// Literal values (exact match validation)
+Literal = String | Number | Boolean | Null ;
+String = "\"" [^"]* "\"" ;
+Number = "-"* [0-9]+ [ "." [0-9]+ ] ;
+Boolean = "true" | "false" ;
+Null = "null" ;
+
+// Type identifiers (UUID, Email, etc.)
+Type = Identifier ;
+Identifier = [A-Z][a-zA-Z0-9_-]* ;
+
+// Function-based validation
+Function = Identifier "(" [ ArgumentList ] ")" ;
+ArgumentList = Argument { "," Argument } ;
+Argument = Literal | SpecialSymbol ;
+SpecialSymbol = "+" | "*" ;
+
+// Object validation with properties
+Object = "{" [ PropertyList ] "}" ;
+PropertyList = Property { "," Property } ;
+Property = String ":" Value ;
+
+// Array validation with element schema
+Array = "[" Value "]" ;
