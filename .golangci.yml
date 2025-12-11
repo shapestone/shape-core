@@ -30,6 +30,7 @@ linters-settings:
     enable-all: true
     disable:
       - shadow
+      - fieldalignment
 
   revive:
     rules:
@@ -67,6 +68,11 @@ issues:
         - dupl
         - gosec
         - funlen
+
+    # Disable appendCombine for simplicity
+    - linters:
+        - gocritic
+      text: "appendCombine"
 
   max-issues-per-linter: 0
   max-same-issues: 0
