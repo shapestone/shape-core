@@ -223,6 +223,10 @@ func TestParseEBNF_ComplexExample(t *testing.T) {
 		ObjectNode = "{" [ Property { "," Property } ] "}" ;
 		Property = StringLiteral ":" Value ;
 		Value = Literal | Type | Function ;
+		StringLiteral = "\"" "string" "\"" ;
+		Literal = "true" | "false" | "null" ;
+		Type = "String" | "Number" | "Boolean" ;
+		Function = "func" "(" [ Value { "," Value } ] ")" ;
 	`
 
 	grammar, err := ParseEBNF(input)
@@ -230,8 +234,8 @@ func TestParseEBNF_ComplexExample(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(grammar.Rules) != 3 {
-		t.Fatalf("expected 3 rules, got %d", len(grammar.Rules))
+	if len(grammar.Rules) != 7 {
+		t.Fatalf("expected 7 rules, got %d", len(grammar.Rules))
 	}
 
 	// Verify grammar is valid (no undefined references)

@@ -1,5 +1,18 @@
 # Shape - Parser Infrastructure for Structured Data
 
+![Build Status](https://github.com/shapestone/shape/actions/workflows/ci.yml/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/shapestone/shape)](https://goreportcard.com/report/github.com/shapestone/shape)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![codecov](https://codecov.io/gh/shapestone/shape/branch/main/graph/badge.svg)](https://codecov.io/gh/shapestone/shape)
+![Go Version](https://img.shields.io/github/go-mod/go-version/shapestone/shape)
+![Latest Release](https://img.shields.io/github/v/release/shapestone/shape)
+[![GoDoc](https://pkg.go.dev/badge/github.com/shapestone/shape.svg)](https://pkg.go.dev/github.com/shapestone/shape)
+
+[![CodeQL](https://github.com/shapestone/shape/actions/workflows/codeql.yml/badge.svg)](https://github.com/shapestone/shape/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/shapestone/shape/badge)](https://securityscorecards.dev/viewer/?uri=github.com/shapestone/shape)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/PLACEHOLDER/badge)](https://www.bestpractices.dev/projects/PLACEHOLDER)
+[![Security Policy](https://img.shields.io/badge/Security-Policy-brightgreen)](SECURITY.md)
+
 **Repository:** github.com/shapestone/shape
 
 Shape is a reusable parser infrastructure library that provides:
@@ -190,9 +203,9 @@ func main() {
 └──────────────────────┬───────────────────────────────────┘
                        │ depends on
                        ▼
-       ┌────────────────────────────────────────┐
-       │       Shape Infrastructure             │
-       ├────────────────────────────────────────┤
+       ┌───────────────────────────────────────┐
+       │       Shape Infrastructure            │
+       ├───────────────────────────────────────┤
        │  ┌───────┐  ┌──────────┐  ┌────────┐  │
        │  │  AST  │  │Tokenizer │  │ Parser │  │
        │  │  API  │  │   API    │  │  API   │  │
@@ -203,7 +216,7 @@ func main() {
        │  ┌────────────────────────────────┐   │
        │  │  Grammar Verification Tools    │   │
        │  └────────────────────────────────┘   │
-       └────────────────────────────────────────┘
+       └───────────────────────────────────────┘
 ```
 
 ## Components
