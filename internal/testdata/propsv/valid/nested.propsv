@@ -1,0 +1,7 @@
+# Nested object using dot notation
+user.id=UUID
+user.name=String(1, 100)
+user.email=Email
+user.profile.firstName=String(1, 50)
+user.profile.lastName=String(1, 50)
+user.profile.age=Integer(18, 120)
