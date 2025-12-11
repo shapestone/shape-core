@@ -1,0 +1,28 @@
+{
+  "user": {
+    "id": UUID,
+    "username": String(3, 20),
+    "email": Email,
+    "profile": {
+      "firstName": String(1, 50),
+      "lastName": String(1, 50),
+      "age": Integer(18, 120),
+      "bio": String(0, 500)
+    },
+    "preferences": {
+      "theme": Enum("light", "dark", "auto"),
+      "language": String(2, 5),
+      "notifications": true
+    },
+    "roles": [String(1, 50)],
+    "metadata": {
+      "created": ISO-8601,
+      "updated": ISO-8601,
+      "tags": [String(1, 30)]
+    }
+  },
+  "settings": {
+    "maxLoginAttempts": Integer(1, 10),
+    "sessionTimeout": Integer(300, 86400)
+  }
+}

@@ -1,0 +1,9 @@
+# All value types
+stringVal="hello world"
+numberInt=42
+numberFloat=3.14
+boolTrue=true
+boolFalse=false
+nullVal=null
+typeId=UUID
+functionCall=Integer(1, 100)

@@ -1,0 +1,106 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  id-token: write  # Required for Sigstore signing
+  packages: write
+
+jobs:
+  test:
+    name: Pre-Release Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Run tests
+        run: go test -v -race ./...
+
+      - name: Run benchmarks
+        run: go test -bench=. -benchmem ./pkg/shape/
+
+  release:
+    name: Create Release
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog for version
+        id: changelog
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          # Extract the section for this version from CHANGELOG.md
+          awk "/^## \[${VERSION#v}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md > release_notes.md || echo "See CHANGELOG.md for details" > release_notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body_path: release_notes.md
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.VERSION, 'alpha') || contains(steps.get_version.outputs.VERSION, 'beta') || contains(steps.get_version.outputs.VERSION, 'rc') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and upload Go module checksum
+        run: |
+          go mod download
+          go mod verify
+          echo "Go module verification successful" >> $GITHUB_STEP_SUMMARY
+
+      - name: Generate SBOM (CycloneDX)
+        uses: CycloneDX/gh-gomod-generate-sbom@v2
+        with:
+          version: v1
+          args: mod -licenses -json -output sbom-cyclonedx.json
+
+      - name: Generate SBOM (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./
+          format: spdx-json
+          output-file: sbom-spdx.json
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign SBOMs with Cosign
+        run: |
+          cosign sign-blob --yes sbom-cyclonedx.json --output-signature sbom-cyclonedx.json.sig --output-certificate sbom-cyclonedx.json.pem
+          cosign sign-blob --yes sbom-spdx.json --output-signature sbom-spdx.json.sig --output-certificate sbom-spdx.json.pem
+
+      - name: Upload SBOMs and signatures to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            sbom-cyclonedx.json
+            sbom-cyclonedx.json.sig
+            sbom-cyclonedx.json.pem
+            sbom-spdx.json
+            sbom-spdx.json.sig
+            sbom-spdx.json.pem
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

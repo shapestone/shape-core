@@ -1,0 +1,53 @@
+# Labeler configuration for automatic PR labeling based on changed files
+
+# Package labels
+'pkg:ast':
+  - changed-files:
+    - any-glob-to-any-file: 'pkg/ast/**/*'
+
+'pkg:tokenizer':
+  - changed-files:
+    - any-glob-to-any-file: 'pkg/tokenizer/**/*'
+
+'pkg:parser':
+  - changed-files:
+    - any-glob-to-any-file: 'pkg/parser/**/*'
+
+'pkg:validator':
+  - changed-files:
+    - any-glob-to-any-file: 'pkg/validator/**/*'
+
+'pkg:grammar':
+  - changed-files:
+    - any-glob-to-any-file: 'pkg/grammar/**/*'
+
+# Type labels
+'type:documentation':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.md'
+      - 'docs/**/*'
+      - 'LICENSE'
+      - 'NOTICE'
+
+'type:tests':
+  - changed-files:
+    - any-glob-to-any-file: '**/*_test.go'
+
+'type:ci-cd':
+  - changed-files:
+    - any-glob-to-any-file:
+      - '.github/**/*'
+      - 'Makefile'
+      - '.golangci.yml'
+
+'type:dependencies':
+  - changed-files:
+    - any-glob-to-any-file:
+      - 'go.mod'
+      - 'go.sum'
+
+# Security
+'security':
+  - changed-files:
+    - any-glob-to-any-file: 'SECURITY.md'
