@@ -5,6 +5,11 @@ All notable changes to the Shape project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1] - 2025-12-12
+
+### Security
+- Updated lychee-action from v1 to v2.0.2 to fix CVE-2024-48908 (arbitrary code injection vulnerability)
+
 ## [0.9.0] - 2025-12-09 - Initial Public Release
 
 ### Overview
@@ -188,4 +193,5 @@ Copyright © 2020-2025 Shapestone
 
 ---
 
+[0.9.1]: https://github.com/shapestone/shape/releases/tag/v0.9.1
 [0.9.0]: https://github.com/shapestone/shape/releases/tag/v0.9.0
