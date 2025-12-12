@@ -839,12 +839,12 @@ schema, err := customparser.Parse(`schema input`)
 ```
 
 ## Documentation
-- [Format Specifications](docs/architecture/specifications/)
-- [Architecture](docs/architecture/ARCHITECTURE.md)
+- [Format Specifications](../../docs/architecture/specifications/)
+- [Architecture](../../docs/architecture/ARCHITECTURE.md)
 - [API Reference](https://pkg.go.dev/github.com/shapestone/shape)
 
 ## Contributing
-See [CONTRIBUTING.md](docs/contributor/contributing.md)
+See [CONTRIBUTING.md](../../CONTRIBUTING.md)
 ```
 
 ## 12. Production Readiness Checklist

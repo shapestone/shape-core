@@ -319,7 +319,6 @@ For parser-specific performance metrics, see individual parser project documenta
 - [Architecture](docs/architecture/ARCHITECTURE.md) - System design and components
 - [ADR 0004: Parser Strategy](docs/architecture/decisions/0004-parser-strategy.md) - LL(1) recursive descent parsing
 - [ADR 0005: Grammar-as-Verification](docs/architecture/decisions/0005-grammar-as-verification.md) - Enforced documentation and parser correctness
-- [Benchmarks](docs/BENCHMARKS.md) - Performance analysis
 - [Contributing](CONTRIBUTING.md) - Contribution guidelines
 - [Security](SECURITY.md) - Security policy
 - [Ecosystem](ECOSYSTEM.md) - Related projects
