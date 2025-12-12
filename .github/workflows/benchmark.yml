@@ -39,11 +39,9 @@ jobs:
           tool: 'go'
           output-file-path: benchmark.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          alert-threshold: '150%'
+          auto-push: false
+          save-data-file: false
           comment-on-alert: true
           fail-on-alert: false
+          alert-threshold: '150%'
           alert-comment-cc-users: '@shapestone'
-          benchmark-data-dir-path: 'dev/bench'
-          gh-pages-branch: 'gh-pages'
-          gh-repository: 'github.com/shapestone/shape'

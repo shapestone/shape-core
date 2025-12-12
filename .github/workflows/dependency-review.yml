@@ -4,6 +4,11 @@ on:
   pull_request:
     branches: [ main ]
 
+# Skip dependency review on Dependabot PRs since they update dependencies by design
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -12,6 +17,8 @@ jobs:
   dependency-review:
     name: Review Dependencies
     runs-on: ubuntu-latest
+    # Skip on Dependabot PRs
+    if: github.actor != 'dependabot[bot]'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
