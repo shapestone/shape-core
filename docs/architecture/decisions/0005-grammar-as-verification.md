@@ -95,7 +95,7 @@ func TestGrammarVerification(t *testing.T) {
 │  Canonical EBNF Grammar                             │
 │  (Source of Truth)                                  │
 │                                                     │
-│  docs/grammar/{format}.ebnf                            │
+│  docs/grammar/{format}.ebnf                         │
 │  - Mathematical specification                       │
 │  - Defines accepted language                        │
 │  - Maintained alongside parser                      │
