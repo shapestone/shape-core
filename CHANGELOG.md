@@ -5,6 +5,17 @@ All notable changes to the Shape project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2] - 2025-12-12
+
+### Fixed
+- **CRITICAL**: Fixed PARSER_IMPLEMENTATION_GUIDE.md showing incorrect AST usage that blocked parser development
+  - Guide incorrectly showed `ast.NewArrayNode(elements, startPos)` for data (API doesn't exist)
+  - Corrected to show parsers returning Go types (`[]interface{}`, `map[string]interface{}`)
+  - Added "Critical Understanding: AST vs Data" section clarifying Shape's AST is for validation schemas only
+  - Complete rewrite with working examples using correct patterns
+- Added clarification to ADR-0005 distinguishing data parsers vs schema parsers
+- Unblocks shape-json, shape-yaml, shape-xml, shape-csv development
+
 ## [0.9.1] - 2025-12-12
 
 ### Security
@@ -193,5 +204,6 @@ Copyright © 2020-2025 Shapestone
 
 ---
 
+[0.9.2]: https://github.com/shapestone/shape/releases/tag/v0.9.2
 [0.9.1]: https://github.com/shapestone/shape/releases/tag/v0.9.1
 [0.9.0]: https://github.com/shapestone/shape/releases/tag/v0.9.0
