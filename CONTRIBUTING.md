@@ -70,7 +70,7 @@ tok := tokenizer.NewTokenizer(
 
 **Resources for Custom DSLs:**
 
-- [Custom DSL Guide](docs/CUSTOM_DSL_GUIDE.md)
+- [Parser Implementation Guide](docs/PARSER_IMPLEMENTATION_GUIDE.md) - Complete guide for building parsers
 - [Tokenizer Documentation](pkg/tokenizer/README.md)
 - [Example Project: Inkling](https://github.com/shapestone/inkling)
 

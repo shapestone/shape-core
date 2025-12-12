@@ -42,5 +42,5 @@ go run .
 
 ## Learn More
 
-- [Custom DSL Guide](../../docs/CUSTOM_DSL_GUIDE.md)
+- [Parser Implementation Guide](../../docs/PARSER_IMPLEMENTATION_GUIDE.md) - Complete guide for building parsers
 - [Tokenizer Documentation](../../pkg/tokenizer/README.md)
