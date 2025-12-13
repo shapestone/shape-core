@@ -40,6 +40,54 @@ However, hand-coded parsers face challenges:
 
 **Important:** We are **NOT** using parser generators or meta-grammars (like DFR). We still write hand-coded parsers for performance and error quality. Grammar serves as **verification**, not **generation**.
 
+## Critical Distinction: Schema Parsers vs Data Parsers
+
+**IMPORTANT:** This ADR applies to ALL parsers, but there are two fundamentally different types:
+
+### 1. Data Format Parsers (shape-json, shape-yaml, shape-xml)
+
+**Purpose:** Parse data files into Go types
+
+**Returns:** Go built-in types (`interface{}`, `map[string]interface{}`, `[]interface{}`, `string`, `float64`, `bool`, `nil`)
+
+**Example:**
+```go
+// Parse JSON data
+result, err := json.Parse(`{"name": "Alice", "age": 30}`)
+obj := result.(map[string]interface{})  // Go map
+name := obj["name"].(string)            // Go string
+age := obj["age"].(float64)             // Go float64
+```
+
+**AST usage:** Data parsers do **NOT** use Shape's AST nodes. Shape's AST is for validation schemas only.
+
+**See:** [PARSER_IMPLEMENTATION_GUIDE.md](../../PARSER_IMPLEMENTATION_GUIDE.md) for complete data parser implementation details.
+
+### 2. Schema Parsers (Shape's own schema language)
+
+**Purpose:** Parse validation schemas into AST nodes
+
+**Returns:** AST nodes (`*ast.ObjectNode`, `*ast.ArrayNode`, `*ast.TypeNode`, etc.)
+
+**Example:**
+```go
+// Parse Shape schema definition
+schema, err := schema.Parse(`{ "id": UUID, "name": String }`)
+obj := schema.(*ast.ObjectNode)  // AST node representing validation rule
+idSchema := obj.Properties()["id"]  // *ast.TypeNode for UUID type
+```
+
+**AST usage:** Schema parsers **DO** use Shape's AST nodes because they're parsing validation rules, not data.
+
+### Summary
+
+| Parser Type | Input | Returns | Uses AST? | Example |
+|-------------|-------|---------|-----------|---------|
+| **Data Parser** | Data files (JSON, XML, YAML) | Go types (`map`, `slice`, primitives) | NO | `shape-json`, `shape-yaml` |
+| **Schema Parser** | Validation schemas (Shape DSL) | AST nodes (`*ast.ObjectNode`, etc.) | YES | Shape's internal schema parser |
+
+**The examples in this ADR show SCHEMA PARSERS** (parsing Shape's validation language). If you're implementing a **DATA PARSER** (JSON, XML, YAML), your parser should return Go types, not AST nodes.
+
 ## Architectural Boundaries
 
 **Critical:** Shape is **infrastructure only**. Parser projects are **self-contained**.
