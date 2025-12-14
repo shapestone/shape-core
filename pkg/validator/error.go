@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 // ErrorCode represents a machine-readable error type.

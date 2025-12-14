@@ -43,7 +43,7 @@
                  ▼
 ┌──────────────────────────────────────────────────────┐
 │  Shape (Infrastructure Only)                         │
-│  github.com/shapestone/shape                         │
+│  github.com/shapestone/shape-core                         │
 │                                                      │
 │  Provides:                                           │
 │  - pkg/tokenizer/* - Tokenization framework          │
@@ -327,7 +327,7 @@ Using Shape's tokenizer framework:
 ```go
 package tokenizer
 
-import "github.com/shapestone/shape/pkg/tokenizer"
+import "github.com/shapestone/shape-core/pkg/tokenizer"
 
 const (
     TokenLBrace   = "LBrace"
@@ -568,7 +568,7 @@ cd shape-json
 go mod init github.com/shapestone/shape-json
 
 # Add Shape dependency
-go get github.com/shapestone/shape@latest
+go get github.com/shapestone/shape-core@latest
 
 # Create directory structure
 mkdir -p docs/grammar docs/examples
@@ -668,7 +668,7 @@ Create `internal/tokenizer/tokenizer.go`:
 package tokenizer
 
 import (
-    "github.com/shapestone/shape/pkg/tokenizer"
+    "github.com/shapestone/shape-core/pkg/tokenizer"
 )
 
 // NewTokenizer creates a tokenizer for JSON format.
@@ -712,7 +712,7 @@ import (
     "strings"
 
     "github.com/shapestone/shape-json/internal/tokenizer"
-    shapeTokenizer "github.com/shapestone/shape/pkg/tokenizer"
+    shapeTokenizer "github.com/shapestone/shape-core/pkg/tokenizer"
 )
 
 // Parser implements recursive descent parsing for JSON.
@@ -1286,7 +1286,7 @@ package parser
 import (
     "testing"
 
-    "github.com/shapestone/shape/pkg/grammar"
+    "github.com/shapestone/shape-core/pkg/grammar"
 )
 
 func TestGrammarVerification(t *testing.T) {
@@ -1481,7 +1481,7 @@ See [docs/grammar/json.ebnf](docs/grammar/json.ebnf) for the complete EBNF speci
 
 - [Grammar Specification](docs/grammar/json.ebnf)
 - [Examples](docs/examples/)
-- [Shape Infrastructure](https://github.com/shapestone/shape)
+- [Shape Infrastructure](https://github.com/shapestone/shape-core)
 
 ## License
 
@@ -1653,7 +1653,7 @@ import (
     "fmt"
     "strconv"
 
-    "github.com/shapestone/shape/pkg/tokenizer"
+    "github.com/shapestone/shape-core/pkg/tokenizer"
 )
 
 // Token types
@@ -1884,7 +1884,7 @@ func TestParse_Number(t *testing.T) {
 ## Support
 
 For questions or issues:
-- **Shape Issues:** https://github.com/shapestone/shape/issues
+- **Shape Issues:** https://github.com/shapestone/shape-core/issues
 - **Format-specific Issues:** https://github.com/shapestone/shape-{format}/issues
 
 ---

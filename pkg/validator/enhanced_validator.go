@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 // SchemaValidator validates schema ASTs for semantic correctness.

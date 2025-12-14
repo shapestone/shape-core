@@ -21,8 +21,8 @@
 //
 //	import (
 //	    "io"
-//	    "github.com/shapestone/shape/pkg/ast"
-//	    "github.com/shapestone/shape/pkg/tokenizer"
+//	    "github.com/shapestone/shape-core/pkg/ast"
+//	    "github.com/shapestone/shape-core/pkg/tokenizer"
 //	)
 //
 //	func Parse(input string) (ast.SchemaNode, error) {
@@ -115,9 +115,9 @@
 //
 //	import (
 //	    "io"
-//	    "github.com/shapestone/shape/pkg/ast"
-//	    "github.com/shapestone/shape/pkg/parser"
-//	    "github.com/shapestone/shape/pkg/tokenizer"
+//	    "github.com/shapestone/shape-core/pkg/ast"
+//	    "github.com/shapestone/shape-core/pkg/parser"
+//	    "github.com/shapestone/shape-core/pkg/tokenizer"
 //	)
 //
 //	// Core parsing

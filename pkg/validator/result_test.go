@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 // TestValidationResult_Valid tests that new results are valid by default

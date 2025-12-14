@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/shapestone/shape/pkg/tokenizer"
+	"github.com/shapestone/shape-core/pkg/tokenizer"
 )
 
 func main() {

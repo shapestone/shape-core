@@ -56,7 +56,7 @@ body:
       placeholder: |
         package main
 
-        import "github.com/shapestone/shape/pkg/shape"
+        import "github.com/shapestone/shape-core/pkg/shape"
 
         func main() {
             // Your code here

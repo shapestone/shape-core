@@ -60,7 +60,7 @@ The following should **NOT** be added to Shape:
 If you're building a custom DSL, **use Shape's tokenization framework as a library** in your own project instead of adding your format to Shape:
 
 ```go
-import "github.com/shapestone/shape/pkg/tokenizer"
+import "github.com/shapestone/shape-core/pkg/tokenizer"
 
 // Build your custom DSL using Shape's tokenizer
 tok := tokenizer.NewTokenizer(
@@ -99,7 +99,7 @@ See [Local Setup Guide](docs/contributor/local-setup.md) for detailed instructio
 
 ```bash
 # Clone repository
-git clone https://github.com/shapestone/shape.git
+git clone https://github.com/shapestone/shape-core.git
 cd shape
 
 # Run tests
@@ -222,8 +222,8 @@ See [Branching Workflow](docs/contributor/BRANCHING_WORKFLOW.md) for details on:
 
 ## Questions?
 
-- **Issues:** [GitHub Issues](https://github.com/shapestone/shape/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/shapestone/shape/discussions)
+- **Issues:** [GitHub Issues](https://github.com/shapestone/shape-core/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/shapestone/shape-core/discussions)
 - **Documentation:** [docs/](docs/)
 
 Thank you for contributing to Shape! 🎉

@@ -3,7 +3,7 @@ package validator
 import (
 	"fmt"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 // Validator validates schema ASTs for correctness.

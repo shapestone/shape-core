@@ -3,7 +3,7 @@ package grammar
 import (
 	"fmt"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 // ASTEqual performs deep comparison of two AST nodes for structural equality.

@@ -112,8 +112,8 @@ echo "  - Create GitHub release"
 echo "  - Extract release notes from CHANGELOG"
 echo
 echo "Monitor progress at:"
-echo "https://github.com/shapestone/shape/actions"
+echo "https://github.com/shapestone/shape-core/actions"
 echo
 echo "Release will appear at:"
-echo "https://github.com/shapestone/shape/releases/tag/$VERSION"
+echo "https://github.com/shapestone/shape-core/releases/tag/$VERSION"
 echo

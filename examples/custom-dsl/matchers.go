@@ -3,7 +3,7 @@ package main
 import (
 	"unicode"
 
-	"github.com/shapestone/shape/pkg/tokenizer"
+	"github.com/shapestone/shape-core/pkg/tokenizer"
 )
 
 // KeywordMatcher matches reserved words in our DSL

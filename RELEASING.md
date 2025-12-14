@@ -127,16 +127,16 @@ Then fix issues and re-release as `v0.2.1`.
 
 After release is published:
 
-1. ✅ Verify release at https://github.com/shapestone/shape/releases
-2. ✅ Test installation: `go get github.com/shapestone/shape@v0.2.0`
+1. ✅ Verify release at https://github.com/shapestone/shape-core/releases
+2. ✅ Test installation: `go get github.com/shapestone/shape-core@v0.2.0`
 3. ✅ Announce on project channels
 4. ✅ Update dependent projects
 
 ## Monitoring
 
 Watch the release process at:
-- **Actions:** https://github.com/shapestone/shape/actions
-- **Releases:** https://github.com/shapestone/shape/releases
+- **Actions:** https://github.com/shapestone/shape-core/actions
+- **Releases:** https://github.com/shapestone/shape-core/releases
 
 ## Support
 

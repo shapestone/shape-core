@@ -3,7 +3,7 @@ package grammar
 import (
 	"testing"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 func TestASTEqual_BothNil(t *testing.T) {

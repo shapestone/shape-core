@@ -117,7 +117,7 @@ idSchema := obj.Properties()["id"]  // *ast.TypeNode for UUID type
 **Example: shape-json tests itself**
 ```go
 // shape-json/grammar_test.go
-import "github.com/shapestone/shape/pkg/grammar"  // Use Shape's tools
+import "github.com/shapestone/shape-core/pkg/grammar"  // Use Shape's tools
 
 func TestGrammarVerification(t *testing.T) {
     // Load OUR grammar (in our project)
@@ -502,7 +502,7 @@ Task: Implement a parser for the Format schema language.
 
 Inputs:
 1. EBNF Grammar: docs/grammar/{format}.ebnf (with implementation hints)
-2. AST Definitions: github.com/shapestone/shape/pkg/ast
+2. AST Definitions: github.com/shapestone/shape-core/pkg/ast
 3. Parsing Strategy: LL(1) recursive descent (ADR 0004)
 4. Tokenizer: Already implemented, provides Token stream
 
@@ -998,7 +998,7 @@ shape/
 
 **Used by all parser projects:**
 ```go
-import "github.com/shapestone/shape/pkg/grammar"
+import "github.com/shapestone/shape-core/pkg/grammar"
 
 func TestGrammar(t *testing.T) {
     grammar := grammar.ParseEBNF("docs/grammar/{format}.ebnf")

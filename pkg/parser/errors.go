@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 // ParseError represents a parsing error with position information.

@@ -4,7 +4,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 // TypeDescriptor describes a validation type.

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/shapestone/shape/pkg/tokenizer"
+	"github.com/shapestone/shape-core/pkg/tokenizer"
 )
 
 // Token types for EBNF parsing

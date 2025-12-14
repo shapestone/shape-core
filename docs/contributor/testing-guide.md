@@ -405,7 +405,7 @@ package testutil
 
 import (
     "testing"
-    "github.com/shapestone/shape/pkg/ast"
+    "github.com/shapestone/shape-core/pkg/ast"
 )
 
 func AssertNoError(t *testing.T, err error) {
@@ -641,7 +641,7 @@ dlv test ./pkg/ast/ -- -test.run TestTypeName
 ## Questions?
 
 - Review existing tests for examples
-- Check [GitHub Discussions](https://github.com/shapestone/shape/discussions)
+- Check [GitHub Discussions](https://github.com/shapestone/shape-core/discussions)
 - Ask in PR reviews
 
 Happy testing! 🧪

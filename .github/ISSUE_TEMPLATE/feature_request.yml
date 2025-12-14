@@ -8,7 +8,7 @@ body:
       value: |
         Thanks for suggesting a feature! Please note that Shape is intentionally scoped to large, standardized, open data formats only.
 
-        **Before submitting:** Please check our [Format Addition Policy](https://github.com/shapestone/shape/blob/main/CONTRIBUTING.md#format-addition-policy) if you're requesting a new format.
+        **Before submitting:** Please check our [Format Addition Policy](https://github.com/shapestone/shape-core/blob/main/CONTRIBUTING.md#format-addition-policy) if you're requesting a new format.
 
   - type: dropdown
     id: feature-type

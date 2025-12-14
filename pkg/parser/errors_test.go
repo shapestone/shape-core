@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 func TestParseError_Error(t *testing.T) {

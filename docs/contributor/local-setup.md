@@ -26,7 +26,7 @@ git clone https://github.com/YOUR-USERNAME/shape.git
 cd shape
 
 # Add upstream remote
-git remote add upstream https://github.com/shapestone/shape.git
+git remote add upstream https://github.com/shapestone/shape-core.git
 ```
 
 ### 2. Verify Go Installation
@@ -391,8 +391,8 @@ go tool pprof mem.prof
 
 ## Getting Help
 
-- **Issues:** [GitHub Issues](https://github.com/shapestone/shape/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/shapestone/shape/discussions)
+- **Issues:** [GitHub Issues](https://github.com/shapestone/shape-core/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/shapestone/shape-core/discussions)
 - **Documentation:** [docs/](../)
 - **Examples:** [examples/](../../examples/)
 
@@ -403,7 +403,7 @@ After setting up your environment:
 1. Read [CONTRIBUTING.md](../../CONTRIBUTING.md)
 2. Review [Testing Guide](testing-guide.md)
 3. Check [Architecture Documentation](../architecture/ARCHITECTURE.md)
-4. Browse [existing issues](https://github.com/shapestone/shape/issues)
-5. Join discussions on [GitHub Discussions](https://github.com/shapestone/shape/discussions)
+4. Browse [existing issues](https://github.com/shapestone/shape-core/issues)
+5. Join discussions on [GitHub Discussions](https://github.com/shapestone/shape-core/discussions)
 
 Happy coding! 🚀

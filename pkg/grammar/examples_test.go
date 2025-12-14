@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/shapestone/shape/pkg/grammar"
+	"github.com/shapestone/shape-core/pkg/grammar"
 )
 
 // TestExampleBooleanGrammar verifies the boolean.ebnf example works

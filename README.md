@@ -1,18 +1,18 @@
 # Shape - Parser Infrastructure for Structured Data
 
-![Build Status](https://github.com/shapestone/shape/actions/workflows/ci.yml/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/shapestone/shape)](https://goreportcard.com/report/github.com/shapestone/shape)
+![Build Status](https://github.com/shapestone/shape-core/actions/workflows/ci.yml/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/shapestone/shape-core)](https://goreportcard.com/report/github.com/shapestone/shape-core)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![codecov](https://codecov.io/gh/shapestone/shape/branch/main/graph/badge.svg)](https://codecov.io/gh/shapestone/shape)
-![Go Version](https://img.shields.io/github/go-mod/go-version/shapestone/shape)
-![Latest Release](https://img.shields.io/github/v/release/shapestone/shape)
-[![GoDoc](https://pkg.go.dev/badge/github.com/shapestone/shape.svg)](https://pkg.go.dev/github.com/shapestone/shape)
+[![codecov](https://codecov.io/gh/shapestone/shape-core/branch/main/graph/badge.svg)](https://codecov.io/gh/shapestone/shape-core)
+![Go Version](https://img.shields.io/github/go-mod/go-version/shapestone/shape-core)
+![Latest Release](https://img.shields.io/github/v/release/shapestone/shape-core)
+[![GoDoc](https://pkg.go.dev/badge/github.com/shapestone/shape-core.svg)](https://pkg.go.dev/github.com/shapestone/shape-core)
 
-[![CodeQL](https://github.com/shapestone/shape/actions/workflows/codeql.yml/badge.svg)](https://github.com/shapestone/shape/actions/workflows/codeql.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/shapestone/shape/badge)](https://securityscorecards.dev/viewer/?uri=github.com/shapestone/shape)
+[![CodeQL](https://github.com/shapestone/shape-core/actions/workflows/codeql.yml/badge.svg)](https://github.com/shapestone/shape-core/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/shapestone/shape-core/badge)](https://securityscorecards.dev/viewer/?uri=github.com/shapestone/shape-core)
 [![Security Policy](https://img.shields.io/badge/Security-Policy-brightgreen)](SECURITY.md)
 
-**Repository:** github.com/shapestone/shape
+**Repository:** github.com/shapestone/shape-core
 
 Shape is a reusable parser infrastructure library that provides:
 - **AST framework** for representing validation schemas
@@ -64,7 +64,7 @@ Shape provides the foundational components for parsing structured data and build
 ## Installation
 
 ```bash
-go get github.com/shapestone/shape
+go get github.com/shapestone/shape-core
 ```
 
 ## Quick Start
@@ -76,7 +76,7 @@ package main
 
 import (
     "fmt"
-    "github.com/shapestone/shape/pkg/tokenizer"
+    "github.com/shapestone/shape-core/pkg/tokenizer"
 )
 
 func main() {
@@ -106,11 +106,11 @@ func main() {
 Shape provides the infrastructure; actual parsers are in separate projects:
 
 **Data Format Parsers**:
-- [shape-json](https://github.com/shapestone/shape-json) - JSON validation
-- [shape-yaml](https://github.com/shapestone/shape-yaml) - YAML validation
-- [shape-csv](https://github.com/shapestone/shape-csv) - CSV parsing
-- [shape-xml](https://github.com/shapestone/shape-xml) - XML validation
-- [shape-props](https://github.com/shapestone/shape-props) - Properties file parsing
+- [shape-json](https://github.com/shapestone/shape-core-json) - JSON validation
+- [shape-yaml](https://github.com/shapestone/shape-core-yaml) - YAML validation
+- [shape-csv](https://github.com/shapestone/shape-core-csv) - CSV parsing
+- [shape-xml](https://github.com/shapestone/shape-core-xml) - XML validation
+- [shape-props](https://github.com/shapestone/shape-core-props) - Properties file parsing
 
 ### Using the AST Framework
 
@@ -119,7 +119,7 @@ package main
 
 import (
     "fmt"
-    "github.com/shapestone/shape/pkg/ast"
+    "github.com/shapestone/shape-core/pkg/ast"
 )
 
 func main() {
@@ -156,8 +156,8 @@ package main
 
 import (
     "fmt"
-    "github.com/shapestone/shape/pkg/ast"
-    "github.com/shapestone/shape/pkg/validator"
+    "github.com/shapestone/shape-core/pkg/ast"
+    "github.com/shapestone/shape-core/pkg/validator"
 )
 
 func main() {
@@ -294,11 +294,11 @@ Use Shape's validator framework and AST:
 Shape provides the infrastructure for these parser projects:
 
 **Data Format Parsers:**
-- [shape-json](https://github.com/shapestone/shape-json) - JSON validation
-- [shape-yaml](https://github.com/shapestone/shape-yaml) - YAML validation
-- [shape-csv](https://github.com/shapestone/shape-csv) - CSV parsing
-- [shape-xml](https://github.com/shapestone/shape-xml) - XML validation
-- [shape-props](https://github.com/shapestone/shape-props) - Properties file parsing
+- [shape-json](https://github.com/shapestone/shape-core-json) - JSON validation
+- [shape-yaml](https://github.com/shapestone/shape-core-yaml) - YAML validation
+- [shape-csv](https://github.com/shapestone/shape-core-csv) - CSV parsing
+- [shape-xml](https://github.com/shapestone/shape-core-xml) - XML validation
+- [shape-props](https://github.com/shapestone/shape-core-props) - Properties file parsing
 
 ## Related Projects
 
@@ -364,6 +364,6 @@ Shape is production-ready infrastructure:
 
 ## Support
 
-- **Issues:** https://github.com/shapestone/shape/issues
-- **Discussions:** https://github.com/shapestone/shape/discussions
+- **Issues:** https://github.com/shapestone/shape-core/issues
+- **Discussions:** https://github.com/shapestone/shape-core/discussions
 - **Security:** See [SECURITY.md](SECURITY.md)

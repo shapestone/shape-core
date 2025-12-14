@@ -294,7 +294,7 @@ type Position struct {
 ```go
 package parser
 
-import "github.com/shapestone/shape/pkg/ast"
+import "github.com/shapestone/shape-core/pkg/ast"
 
 // Parser interface implemented by all format parsers
 type Parser interface {
@@ -350,8 +350,8 @@ func DetectFormat(input string) (Format, error) {
 package shape
 
 import (
-    "github.com/shapestone/shape/pkg/ast"
-    "github.com/shapestone/shape/internal/parser"
+    "github.com/shapestone/shape-core/pkg/ast"
+    "github.com/shapestone/shape-core/internal/parser"
 )
 
 // Parse parses input with explicit format
@@ -549,7 +549,7 @@ Each format implements custom matchers using the integrated framework:
 package customformat
 
 import (
-    "github.com/shapestone/shape/pkg/tokenizer"
+    "github.com/shapestone/shape-core/pkg/tokenizer"
 )
 
 // Custom matchers for your format
@@ -580,9 +580,9 @@ Each format implements Parser interface:
 package customformat
 
 import (
-    "github.com/shapestone/shape/pkg/ast"
-    "github.com/shapestone/shape/pkg/parser"
-    "github.com/shapestone/shape/pkg/tokenizer"
+    "github.com/shapestone/shape-core/pkg/ast"
+    "github.com/shapestone/shape-core/pkg/parser"
+    "github.com/shapestone/shape-core/pkg/tokenizer"
 )
 
 type Parser struct {
@@ -644,7 +644,7 @@ data-validator/
 │
 └── go.mod
     require (
-        github.com/shapestone/shape    // Shape parser
+        github.com/shapestone/shape-core    // Shape parser
     )
 ```
 
@@ -654,9 +654,9 @@ data-validator/
 package validator
 
 import (
-    "github.com/shapestone/shape"
-    "github.com/shapestone/shape/pkg/ast"
-    "github.com/shapestone/shape/internal/parser"
+    "github.com/shapestone/shape-core"
+    "github.com/shapestone/shape-core/pkg/ast"
+    "github.com/shapestone/shape-core/internal/parser"
 )
 
 // Validate validates data against a schema
@@ -677,7 +677,7 @@ func Validate(schemaInput string, format parser.Format, data interface{}) error 
 
 | Component | Responsibility | Repository |
 |-----------|----------------|------------|
-| **shape** | Parse schemas → AST | github.com/shapestone/shape |
+| **shape** | Parse schemas → AST | github.com/shapestone/shape-core |
 | **downstream projects** | Use AST for validation, transformation, etc. | Various (data-validator, custom tools) |
 
 ## 9. Testing Strategy
@@ -832,7 +832,7 @@ go get github.com/shapestone/shape
 
 ## Quick Start
 ```go
-import "github.com/shapestone/shape"
+import "github.com/shapestone/shape-core"
 import "github.com/shapestone/shape-customparser"
 
 schema, err := customparser.Parse(`schema input`)
@@ -841,7 +841,7 @@ schema, err := customparser.Parse(`schema input`)
 ## Documentation
 - [Format Specifications](../../docs/architecture/specifications/)
 - [Architecture](../../docs/architecture/ARCHITECTURE.md)
-- [API Reference](https://pkg.go.dev/github.com/shapestone/shape)
+- [API Reference](https://pkg.go.dev/github.com/shapestone/shape-core)
 
 ## Contributing
 See [CONTRIBUTING.md](../../CONTRIBUTING.md)

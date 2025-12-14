@@ -18,7 +18,7 @@ package main
 
 import (
     "fmt"
-    "github.com/shapestone/shape/pkg/grammar"
+    "github.com/shapestone/shape-core/pkg/grammar"
 )
 
 func main() {

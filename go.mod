@@ -1,4 +1,4 @@
-module github.com/shapestone/shape
+module github.com/shapestone/shape-core
 
 go 1.23
 

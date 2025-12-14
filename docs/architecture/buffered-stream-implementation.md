@@ -201,7 +201,7 @@ matched, ok := pattern(stream)
 $ go test ./pkg/tokenizer -v
 ...
 PASS
-ok      github.com/shapestone/shape/pkg/tokenizer    5.011s
+ok      github.com/shapestone/shape-core/pkg/tokenizer    5.011s
 ```
 
 ## Future Enhancements

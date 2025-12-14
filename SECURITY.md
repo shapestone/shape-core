@@ -21,7 +21,7 @@ We take security vulnerabilities seriously. If you discover a security issue in 
 Instead, please use one of the following methods:
 
 1. **GitHub Private Vulnerability Reporting** (Preferred)
-   - Navigate to the [Security tab](https://github.com/shapestone/shape/security) of this repository
+   - Navigate to the [Security tab](https://github.com/shapestone/shape-core/security) of this repository
    - Click "Report a vulnerability"
    - Fill out the vulnerability report form
 

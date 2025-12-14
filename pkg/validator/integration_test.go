@@ -3,7 +3,7 @@ package validator
 import (
 	"testing"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 // TestValidation_Integration_ValidSchema tests full validation flow with valid schema

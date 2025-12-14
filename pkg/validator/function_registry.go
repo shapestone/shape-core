@@ -5,7 +5,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 // FunctionDescriptor describes a validation function.

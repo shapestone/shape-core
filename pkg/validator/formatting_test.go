@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/shapestone/shape/pkg/ast"
+	"github.com/shapestone/shape-core/pkg/ast"
 )
 
 // TestValidationError_FormatPlain tests plain text formatting without colors

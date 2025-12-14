@@ -16,8 +16,8 @@ The validator framework provides:
 ```go
 import (
     "fmt"
-    "github.com/shapestone/shape/pkg/ast"
-    "github.com/shapestone/shape/pkg/validator"
+    "github.com/shapestone/shape-core/pkg/ast"
+    "github.com/shapestone/shape-core/pkg/validator"
 )
 
 func main() {
@@ -197,7 +197,7 @@ Output:
 Register custom types and functions for domain-specific validation:
 
 ```go
-import "github.com/shapestone/shape/pkg/validator"
+import "github.com/shapestone/shape-core/pkg/validator"
 
 v := validator.NewSchemaValidator()
 
