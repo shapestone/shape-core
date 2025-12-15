@@ -50,6 +50,7 @@ jobs:
         file: ./coverage.out
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
+        slug: shapestone/shape-core
 
   lint:
     name: Lint
