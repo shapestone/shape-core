@@ -7,6 +7,7 @@ type Visitor interface {
 	VisitFunction(node *FunctionNode) error
 	VisitObject(node *ObjectNode) error
 	VisitArray(node *ArrayNode) error
+	VisitArrayData(node *ArrayDataNode) error
 }
 
 // BaseVisitor provides default implementations for the Visitor interface.
@@ -35,6 +36,11 @@ func (v *BaseVisitor) VisitObject(node *ObjectNode) error {
 
 // VisitArray is the default implementation for visiting array nodes.
 func (v *BaseVisitor) VisitArray(node *ArrayNode) error {
+	return nil
+}
+
+// VisitArrayData is the default implementation for visiting array data nodes.
+func (v *BaseVisitor) VisitArrayData(node *ArrayDataNode) error {
 	return nil
 }
 

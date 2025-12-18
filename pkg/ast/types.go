@@ -18,6 +18,9 @@ const (
 
 	// NodeTypeArray represents an array with element schema
 	NodeTypeArray
+
+	// NodeTypeArrayData represents actual array data with elements
+	NodeTypeArrayData
 )
 
 // String returns the string representation of the node type.
@@ -33,6 +36,8 @@ func (nt NodeType) String() string {
 		return "Object"
 	case NodeTypeArray:
 		return "Array"
+	case NodeTypeArrayData:
+		return "ArrayData"
 	default:
 		return "Unknown"
 	}
