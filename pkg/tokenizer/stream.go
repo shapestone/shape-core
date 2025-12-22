@@ -135,6 +135,7 @@ func (s *streamImpl) PeekChar() (rune, bool) {
 
 // NextChar reads and returns the next rune, advancing the stream position.
 // Automatically tracks newlines for row/column position.
+// For ASCII runes (< 0x80), also advances bytePos to maintain sync with ByteStream operations.
 func (s *streamImpl) NextChar() (rune, bool) {
 	if s.IsEos() {
 		return 0, false
@@ -142,6 +143,12 @@ func (s *streamImpl) NextChar() (rune, bool) {
 	r := s.data[s.location.Cursor]
 	s.location.Cursor += 1
 	s.location.Column += 1
+
+	// For ASCII runes, advance byte position as well (one rune = one byte)
+	if r < 0x80 {
+		s.bytePos++
+	}
+
 	if r == '\n' {
 		s.location.Row += 1
 		s.location.Column = 1
@@ -214,14 +221,19 @@ func (s *streamImpl) PeekByte() (byte, bool) {
 }
 
 // NextByte reads and returns the next byte, advancing position.
-// Note: This advances bytePos but may desync from rune position.
-// Use carefully for ASCII-only scanning.
+// For ASCII bytes (< 0x80), also advances the rune cursor to maintain sync.
+// This ensures compatibility with mixed byte/rune API usage.
 func (s *streamImpl) NextByte() (byte, bool) {
 	if s.bytePos >= s.totalSize {
 		return 0, false
 	}
 	b := s.bytes[s.bytePos]
 	s.bytePos++
+
+	// For ASCII bytes, advance rune cursor as well (one byte = one rune)
+	if b < 0x80 {
+		s.location.Cursor++
+	}
 
 	// Update location tracking for newlines
 	if b == '\n' {
@@ -250,6 +262,8 @@ func (s *streamImpl) SkipWhitespace() {
 			return
 		}
 		s.bytePos++
+		s.location.Cursor++ // ASCII whitespace: one byte = one rune
+
 		if b == '\n' {
 			s.location.Row++
 			s.location.Column = 1

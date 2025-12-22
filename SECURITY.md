@@ -26,7 +26,7 @@ Instead, please use one of the following methods:
    - Fill out the vulnerability report form
 
 2. **Email**
-   - Send details to: security@shapestone.dev
+   - Send details to: security@shapestone.com
    - Include "Shape Security" in the subject line
 
 ### What to Include
@@ -108,7 +108,7 @@ We appreciate the security research community's efforts. Researchers who respons
 
 ## Questions?
 
-If you have questions about this security policy or Shape's security posture, please open a public discussion in GitHub Discussions or contact security@shapestone.dev.
+If you have questions about this security policy or Shape's security posture, please open a public discussion in GitHub Discussions or contact security@shapestone.com.
 
 ---
 

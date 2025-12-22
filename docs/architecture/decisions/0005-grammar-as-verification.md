@@ -42,51 +42,78 @@ However, hand-coded parsers face challenges:
 
 ## Critical Distinction: Schema Parsers vs Data Parsers
 
-**IMPORTANT:** This ADR applies to ALL parsers, but there are two fundamentally different types:
+**IMPORTANT:** This ADR applies to ALL parsers. All parsers return the universal AST.
 
-### 1. Data Format Parsers (shape-json, shape-yaml, shape-xml)
+### Parser Type Classification
 
-**Purpose:** Parse data files into Go types
+#### 1. Data Format Parsers (shape-json, shape-yaml, shape-xml, shape-csv)
 
-**Returns:** Go built-in types (`interface{}`, `map[string]interface{}`, `[]interface{}`, `string`, `float64`, `bool`, `nil`)
+**Purpose:** Parse data files into universal AST
+
+**Returns:** Universal AST nodes (`ast.SchemaNode`, `*ast.ObjectNode`, `*ast.LiteralNode`, etc.)
+
+**Primary API Example:**
+```go
+// Parse JSON data to AST
+node, err := json.Parse(`{"name": "Alice", "age": 30}`)
+obj := node.(*ast.ObjectNode)           // AST ObjectNode
+nameNode := obj.Properties()["name"]    // AST LiteralNode
+name := nameNode.(*ast.LiteralNode).Value().(string)  // "Alice"
+```
+
+**Secondary API Example (Convenience):**
+```go
+// Unmarshal to Go struct
+var person Person
+err := json.Unmarshal(data, &person)  // Internally: Parse→AST→Go struct
+```
+
+**Why AST not Go types:**
+- ✅ Source positions for error messages ("Error at line 5, column 12")
+- ✅ Enables queries (JSONPath/XPath) after conversion
+- ✅ Supports diffing and transformations
+- ✅ Proper type system for programmatic construction
+- ✅ Format-specific features preserved (XML attributes vs elements)
+
+**Dual API Pattern:**
+```go
+// Primary: Parse → AST
+func Parse(input string) (ast.SchemaNode, error)
+
+// Secondary: Unmarshal → Go types (converts AST internally)
+func Unmarshal(data []byte, v interface{}) error
+
+// Helper: Convert AST → Go types for queries
+func ToGoValue(node ast.SchemaNode) interface{}
+```
+
+**See:** [PARSER_IMPLEMENTATION_GUIDE.md](../../PARSER_IMPLEMENTATION_GUIDE.md) for complete implementation details.
+
+#### 2. Schema Parsers (Shape's validation language - future)
+
+**Purpose:** Parse validation schemas with type/function nodes
+
+**Returns:** AST nodes with TypeNode, FunctionNode
 
 **Example:**
 ```go
-// Parse JSON data
-result, err := json.Parse(`{"name": "Alice", "age": 30}`)
-obj := result.(map[string]interface{})  // Go map
-name := obj["name"].(string)            // Go string
-age := obj["age"].(float64)             // Go float64
+// Parse Shape schema definition (future feature)
+schema, err := schema.Parse(`{ "id": UUID, "name": String(1,100) }`)
+obj := schema.(*ast.ObjectNode)            // AST with validation rules
+idSchema := obj.Properties()["id"]         // *ast.TypeNode for UUID
+nameSchema := obj.Properties()["name"]     // *ast.FunctionNode for String(1,100)
 ```
-
-**AST usage:** Data parsers do **NOT** use Shape's AST nodes. Shape's AST is for validation schemas only.
-
-**See:** [PARSER_IMPLEMENTATION_GUIDE.md](../../PARSER_IMPLEMENTATION_GUIDE.md) for complete data parser implementation details.
-
-### 2. Schema Parsers (Shape's own schema language)
-
-**Purpose:** Parse validation schemas into AST nodes
-
-**Returns:** AST nodes (`*ast.ObjectNode`, `*ast.ArrayNode`, `*ast.TypeNode`, etc.)
-
-**Example:**
-```go
-// Parse Shape schema definition
-schema, err := schema.Parse(`{ "id": UUID, "name": String }`)
-obj := schema.(*ast.ObjectNode)  // AST node representing validation rule
-idSchema := obj.Properties()["id"]  // *ast.TypeNode for UUID type
-```
-
-**AST usage:** Schema parsers **DO** use Shape's AST nodes because they're parsing validation rules, not data.
 
 ### Summary
 
-| Parser Type | Input | Returns | Uses AST? | Example |
-|-------------|-------|---------|-----------|---------|
-| **Data Parser** | Data files (JSON, XML, YAML) | Go types (`map`, `slice`, primitives) | NO | `shape-json`, `shape-yaml` |
-| **Schema Parser** | Validation schemas (Shape DSL) | AST nodes (`*ast.ObjectNode`, etc.) | YES | Shape's internal schema parser |
+| Parser Type | Input | Primary Output | AST Usage | Examples |
+|-------------|-------|----------------|-----------|----------|
+| **Data Format Parser** | Data files (JSON/XML/YAML) | Universal AST (LiteralNode, ObjectNode) | ✅ Returns AST with data | `shape-json`, `shape-xml`, `shape-yaml` |
+| **Data Format Parser** | Data files | Go types (secondary API) | ✅ Converts AST→Go types | `json.Unmarshal()`, `xml.Unmarshal()` |
+| **Schema Parser** | Validation schemas (Shape DSL) | AST with TypeNode, FunctionNode | ✅ Returns AST with rules | Shape schema language (future) |
+| **Validator** | Data + Schema | Error or nil | ✅ Uses AST for validation | `shape-jsonv`, `shape-xmlv` |
 
-**The examples in this ADR show SCHEMA PARSERS** (parsing Shape's validation language). If you're implementing a **DATA PARSER** (JSON, XML, YAML), your parser should return Go types, not AST nodes.
+**Key Insight:** The same universal AST represents both data (parsed JSON/XML/YAML) and validation schemas (rules). This enables cross-format validation, transformation, and tooling.
 
 ## Architectural Boundaries
 

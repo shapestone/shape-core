@@ -5,13 +5,32 @@
 
 ## Context
 
-Shape needs a unified Abstract Syntax Tree (AST) representation for schemas across multiple data formats. The AST must be:
+Shape needs a unified Abstract Syntax Tree (AST) representation that serves dual purposes across multiple data formats. The AST must be:
 
-1. **Format Agnostic:** Same AST structure regardless of input format
-2. **Complete:** Represent all schema constructs
-3. **Traversable:** Easy to walk and process
-4. **Serializable:** Can be saved/loaded for caching
-5. **Extensible:** Support future node types
+1. **Format Agnostic:** Same AST structure regardless of input format (JSON, XML, YAML, CSV, etc.)
+2. **Dual Purpose:** Represent both validation schemas AND parsed data
+3. **Complete:** Represent all schema constructs and data structures
+4. **Traversable:** Easy to walk and process
+5. **Serializable:** Can be saved/loaded for caching
+6. **Extensible:** Support future node types
+
+### Dual Purpose Design
+
+The AST serves two distinct but compatible purposes:
+
+**For Validation Schemas:**
+- TypeNode represents type constraints (UUID, Email, Integer)
+- FunctionNode represents parameterized validators (Integer(1, 100))
+- ObjectNode defines required properties and their schemas
+- ArrayNode defines element schemas for validation
+
+**For Data Representation:**
+- LiteralNode holds actual parsed values (strings, numbers, booleans, null)
+- ObjectNode contains actual property values from JSON/XML/YAML objects
+- ArrayNode or ObjectNode (with numeric keys) represents parsed arrays
+- Source positions enable precise error reporting
+
+This dual purpose is intentional - the same AST structure works for both validation rules and actual data.
 
 ## Decision
 
