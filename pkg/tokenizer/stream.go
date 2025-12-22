@@ -60,13 +60,41 @@ type ByteStream interface {
 func NewStream(str string) Stream {
 	bytes := []byte(str)
 	runes := []rune(str)
+
+	// Check if stream is pure ASCII (fast path optimization)
+	isASCIIOnly := len(runes) == len(bytes)
+
+	// Build rune->byte position mapping for synchronization
+	var runeToBytePos []int
+	if !isASCIIOnly {
+		runeToBytePos = make([]int, len(runes)+1) // +1 for EOF position
+		byteIdx := 0
+		for runeIdx := range runes {
+			runeToBytePos[runeIdx] = byteIdx
+			// Calculate byte width of this rune
+			r := runes[runeIdx]
+			if r < 0x80 {
+				byteIdx += 1
+			} else if r < 0x800 {
+				byteIdx += 2
+			} else if r < 0x10000 {
+				byteIdx += 3
+			} else {
+				byteIdx += 4
+			}
+		}
+		runeToBytePos[len(runes)] = byteIdx // EOF position
+	}
+
 	return &streamImpl{
-		uuid:      uuid.New(),
-		bytes:     bytes,
-		data:      runes,
-		length:    len(runes),
-		bytePos:   0,
-		totalSize: len(bytes),
+		uuid:         uuid.New(),
+		bytes:        bytes,
+		data:         runes,
+		length:       len(runes),
+		bytePos:      0,
+		totalSize:    len(bytes),
+		runeToBytePos: runeToBytePos,
+		isASCIIOnly:   isASCIIOnly,
 		location: Location{
 			Cursor: 0,
 			Row:    1,
@@ -81,14 +109,18 @@ func NewStream(str string) Stream {
 //   - data: Decoded runes for UTF-8 character processing
 //   - bytePos: Current position in bytes array
 //   - location.Cursor: Current position in runes array
+//   - runeToBytePos: Maps rune index to byte position for synchronization
+//   - isASCIIOnly: True if all content is ASCII (len(runes) == len(bytes))
 type streamImpl struct {
-	uuid      uuid.UUID
-	bytes     []byte // Original byte data
-	data      []rune // Decoded rune data
-	length    int    // Number of runes
-	totalSize int    // Number of bytes
-	bytePos   int    // Current byte position
-	location  Location
+	uuid         uuid.UUID
+	bytes        []byte // Original byte data
+	data         []rune // Decoded rune data
+	length       int    // Number of runes
+	totalSize    int    // Number of bytes
+	bytePos      int    // Current byte position
+	location     Location
+	runeToBytePos []int  // Maps rune index -> byte offset for sync
+	isASCIIOnly   bool   // True if stream is pure ASCII
 }
 
 // Location holds position information within the stream.
@@ -101,13 +133,15 @@ type Location struct {
 // Clone creates a copy of the stream for backtracking support.
 func (s *streamImpl) Clone() Stream {
 	return &streamImpl{
-		uuid:      s.uuid,
-		bytes:     s.bytes,
-		data:      s.data,
-		length:    s.length,
-		totalSize: s.totalSize,
-		bytePos:   s.bytePos,
-		location:  s.location,
+		uuid:         s.uuid,
+		bytes:        s.bytes,
+		data:         s.data,
+		length:       s.length,
+		totalSize:    s.totalSize,
+		bytePos:      s.bytePos,
+		location:     s.location,
+		runeToBytePos: s.runeToBytePos, // Shared mapping (read-only)
+		isASCIIOnly:   s.isASCIIOnly,
 	}
 }
 
@@ -135,7 +169,7 @@ func (s *streamImpl) PeekChar() (rune, bool) {
 
 // NextChar reads and returns the next rune, advancing the stream position.
 // Automatically tracks newlines for row/column position.
-// For ASCII runes (< 0x80), also advances bytePos to maintain sync with ByteStream operations.
+// Synchronizes bytePos using the rune->byte mapping.
 func (s *streamImpl) NextChar() (rune, bool) {
 	if s.IsEos() {
 		return 0, false
@@ -144,9 +178,13 @@ func (s *streamImpl) NextChar() (rune, bool) {
 	s.location.Cursor += 1
 	s.location.Column += 1
 
-	// For ASCII runes, advance byte position as well (one rune = one byte)
-	if r < 0x80 {
-		s.bytePos++
+	// Synchronize byte position
+	if s.isASCIIOnly {
+		// Fast path: 1 rune = 1 byte
+		s.bytePos = s.location.Cursor
+	} else if s.location.Cursor < len(s.runeToBytePos) {
+		// UTF-8: Use mapping
+		s.bytePos = s.runeToBytePos[s.location.Cursor]
 	}
 
 	if r == '\n' {
@@ -195,7 +233,7 @@ func (s *streamImpl) Reset() {
 	s.location.Cursor = 0
 	s.location.Row = 1
 	s.location.Column = 1
-	s.bytePos = 0
+	s.bytePos = 0  // Already at position 0
 }
 
 // GetLocation returns the current position in the stream.
@@ -204,8 +242,15 @@ func (s *streamImpl) GetLocation() Location {
 }
 
 // SetLocation sets the stream position to the specified location.
+// Also synchronizes bytePos to match the rune cursor.
 func (s *streamImpl) SetLocation(loc Location) {
 	s.location = loc
+	// Sync bytePos from rune cursor
+	if s.isASCIIOnly {
+		s.bytePos = loc.Cursor
+	} else if loc.Cursor < len(s.runeToBytePos) {
+		s.bytePos = s.runeToBytePos[loc.Cursor]
+	}
 }
 
 //
@@ -220,9 +265,37 @@ func (s *streamImpl) PeekByte() (byte, bool) {
 	return s.bytes[s.bytePos], true
 }
 
+// syncRuneCursorFromBytePos updates location.Cursor to match current bytePos.
+// For ASCII-only streams, this is trivial (cursor = bytePos).
+// For UTF-8 streams, uses binary search on the rune->byte mapping.
+func (s *streamImpl) syncRuneCursorFromBytePos() {
+	// Fast path: ASCII-only content (1 byte = 1 rune)
+	if s.isASCIIOnly {
+		s.location.Cursor = s.bytePos
+		return
+	}
+
+	// UTF-8: Check if we're already in sync (common after NextChar)
+	if s.location.Cursor < len(s.runeToBytePos) &&
+	   s.runeToBytePos[s.location.Cursor] == s.bytePos {
+		return
+	}
+
+	// Binary search to find rune index for current bytePos
+	left, right := 0, len(s.runeToBytePos)-1
+	for left < right {
+		mid := (left + right + 1) / 2
+		if s.runeToBytePos[mid] <= s.bytePos {
+			left = mid
+		} else {
+			right = mid - 1
+		}
+	}
+	s.location.Cursor = left
+}
+
 // NextByte reads and returns the next byte, advancing position.
-// For ASCII bytes (< 0x80), also advances the rune cursor to maintain sync.
-// This ensures compatibility with mixed byte/rune API usage.
+// Synchronizes the rune cursor to maintain compatibility with mixed byte/rune usage.
 func (s *streamImpl) NextByte() (byte, bool) {
 	if s.bytePos >= s.totalSize {
 		return 0, false
@@ -230,10 +303,8 @@ func (s *streamImpl) NextByte() (byte, bool) {
 	b := s.bytes[s.bytePos]
 	s.bytePos++
 
-	// For ASCII bytes, advance rune cursor as well (one byte = one rune)
-	if b < 0x80 {
-		s.location.Cursor++
-	}
+	// Synchronize rune cursor with byte position
+	s.syncRuneCursorFromBytePos()
 
 	// Update location tracking for newlines
 	if b == '\n' {
@@ -259,10 +330,11 @@ func (s *streamImpl) SkipWhitespace() {
 	for s.bytePos < s.totalSize {
 		b := s.bytes[s.bytePos]
 		if b != ' ' && b != '\t' && b != '\n' && b != '\r' {
+			// Sync rune cursor before returning
+			s.syncRuneCursorFromBytePos()
 			return
 		}
 		s.bytePos++
-		s.location.Cursor++ // ASCII whitespace: one byte = one rune
 
 		if b == '\n' {
 			s.location.Row++
@@ -271,6 +343,8 @@ func (s *streamImpl) SkipWhitespace() {
 			s.location.Column++
 		}
 	}
+	// Sync at end
+	s.syncRuneCursorFromBytePos()
 }
 
 // SkipUntil advances until finding the delimiter byte, returning bytes skipped.
