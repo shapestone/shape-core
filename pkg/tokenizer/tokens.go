@@ -87,6 +87,17 @@ func NewTokenizer(matchers ...Matcher) Tokenizer {
 	}
 }
 
+// NewTokenizerWithoutWhitespace constructs a Tokenizer with the given matchers
+// WITHOUT automatically prepending WhiteSpaceMatcher.
+// Use this for parsers that handle whitespace themselves (e.g., JSON parser
+// that skips whitespace inline to avoid creating tokens that are immediately discarded).
+func NewTokenizerWithoutWhitespace(matchers ...Matcher) Tokenizer {
+	return Tokenizer{
+		matchers: matchers,
+		marks:    make([]Stream, 0),
+	}
+}
+
 // Initialize initializes the tokenizer with the given input string.
 func (t *Tokenizer) Initialize(input string) {
 	t.stream = NewStream(input)
