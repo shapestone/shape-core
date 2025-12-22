@@ -24,46 +24,90 @@ type Stream interface {
 	GetOffset() int
 	GetColumn() int
 	Reset()
+	GetLocation() Location
+	SetLocation(Location)
+}
+
+// ByteStream extends Stream with high-performance byte-level operations.
+// This interface provides optimized primitives for parsing ASCII-heavy formats like JSON.
+// Use byte-level methods for structural tokens and ASCII scanning, falling back to
+// rune-level methods only when processing UTF-8 content.
+type ByteStream interface {
+	Stream // Embed all rune-based methods for backward compatibility
+
+	// Byte-level access (fast path for ASCII)
+	PeekByte() (byte, bool)
+	NextByte() (byte, bool)
+	PeekBytes(n int) []byte
+
+	// Optimized scanning primitives
+	SkipWhitespace()
+	SkipUntil(delim byte) int
+	FindByte(b byte) int
+	FindAny(chars []byte) int
+
+	// Zero-copy extraction
+	SliceFrom(start int) []byte
+	BytePosition() int
+
+	// Access to underlying byte data
+	RemainingBytes() []byte
 }
 
 // NewStream creates a new stream instance from the provided string.
 // The stream supports UTF-8 encoding and tracks position (offset, line, column).
+// Returns a ByteStream for access to both rune and byte-level operations.
 func NewStream(str string) Stream {
+	bytes := []byte(str)
 	runes := []rune(str)
 	return &streamImpl{
-		uuid:   uuid.New(),
-		data:   runes,
-		length: len(runes),
-		location: location{
-			cursor: 0,
-			row:    1,
-			column: 1,
+		uuid:      uuid.New(),
+		bytes:     bytes,
+		data:      runes,
+		length:    len(runes),
+		bytePos:   0,
+		totalSize: len(bytes),
+		location: Location{
+			Cursor: 0,
+			Row:    1,
+			Column: 1,
 		},
 	}
 }
 
-// streamImpl is the internal implementation of the Stream interface.
+// streamImpl is the internal implementation of the Stream and ByteStream interfaces.
+// It maintains both byte and rune representations for optimal performance:
+//   - bytes: Original byte data for fast ASCII scanning
+//   - data: Decoded runes for UTF-8 character processing
+//   - bytePos: Current position in bytes array
+//   - location.Cursor: Current position in runes array
 type streamImpl struct {
-	uuid     uuid.UUID
-	data     []rune
-	length   int
-	location location
+	uuid      uuid.UUID
+	bytes     []byte // Original byte data
+	data      []rune // Decoded rune data
+	length    int    // Number of runes
+	totalSize int    // Number of bytes
+	bytePos   int    // Current byte position
+	location  Location
 }
 
-// location holds position information within the stream.
-type location struct {
-	cursor int // byte offset
-	row    int // line number (1-indexed)
-	column int // column number (1-indexed)
+// Location holds position information within the stream.
+type Location struct {
+	Cursor int // byte offset
+	Row    int // line number (1-indexed)
+	Column int // column number (1-indexed)
 }
 
 // Clone creates a copy of the stream for backtracking support.
 func (s *streamImpl) Clone() Stream {
 	return &streamImpl{
-		uuid:     s.uuid,
-		data:     s.data,
-		length:   s.length,
-		location: s.location,
+		uuid:      s.uuid,
+		bytes:     s.bytes,
+		data:      s.data,
+		length:    s.length,
+		totalSize: s.totalSize,
+		bytePos:   s.bytePos,
+		location:  s.location,
 	}
 }
 
@@ -85,7 +129,7 @@ func (s *streamImpl) PeekChar() (rune, bool) {
 	if s.IsEos() {
 		return 0, false
 	}
-	r := s.data[s.location.cursor]
+	r := s.data[s.location.Cursor]
 	return r, true
 }
 
@@ -95,12 +139,12 @@ func (s *streamImpl) NextChar() (rune, bool) {
 	if s.IsEos() {
 		return 0, false
 	}
-	r := s.data[s.location.cursor]
-	s.location.cursor += 1
-	s.location.column += 1
+	r := s.data[s.location.Cursor]
+	s.location.Cursor += 1
+	s.location.Column += 1
 	if r == '\n' {
-		s.location.row += 1
-		s.location.column = 1
+		s.location.Row += 1
+		s.location.Column = 1
 	}
 	return r, true
 }
@@ -121,29 +165,153 @@ func (s *streamImpl) MatchChars(match []rune) bool {
 
 // IsEos returns true if the cursor has reached the end of stream.
 func (s *streamImpl) IsEos() bool {
-	return s.location.cursor >= s.length
+	return s.location.Cursor >= s.length
 }
 
 // GetOffset returns the current byte offset within the stream.
 func (s *streamImpl) GetOffset() int {
-	return s.location.cursor
+	return s.location.Cursor
 }
 
 // GetRow returns the current line number (1-indexed).
 func (s *streamImpl) GetRow() int {
-	return s.location.row
+	return s.location.Row
 }
 
 // GetColumn returns the current column number (1-indexed).
 func (s *streamImpl) GetColumn() int {
-	return s.location.column
+	return s.location.Column
 }
 
 // Reset resets the stream to the beginning (offset 0, row 1, column 1).
 func (s *streamImpl) Reset() {
-	s.location.cursor = 0
-	s.location.row = 1
-	s.location.column = 1
+	s.location.Cursor = 0
+	s.location.Row = 1
+	s.location.Column = 1
+	s.bytePos = 0
+}
+
+// GetLocation returns the current position in the stream.
+func (s *streamImpl) GetLocation() Location {
+	return s.location
+}
+
+// SetLocation sets the stream position to the specified location.
+func (s *streamImpl) SetLocation(loc Location) {
+	s.location = loc
+}
+
+//
+// ByteStream Implementation - High-performance byte-level operations
+//
+
+// PeekByte returns the next byte without advancing (for ASCII fast path).
+func (s *streamImpl) PeekByte() (byte, bool) {
+	if s.bytePos >= s.totalSize {
+		return 0, false
+	}
+	return s.bytes[s.bytePos], true
+}
+
+// NextByte reads and returns the next byte, advancing position.
+// Note: This advances bytePos but may desync from rune position.
+// Use carefully for ASCII-only scanning.
+func (s *streamImpl) NextByte() (byte, bool) {
+	if s.bytePos >= s.totalSize {
+		return 0, false
+	}
+	b := s.bytes[s.bytePos]
+	s.bytePos++
+
+	// Update location tracking for newlines
+	if b == '\n' {
+		s.location.Row++
+		s.location.Column = 1
+	} else {
+		s.location.Column++
+	}
+
+	return b, true
+}
+
+// PeekBytes returns the next n bytes without advancing (zero-copy slice).
+func (s *streamImpl) PeekBytes(n int) []byte {
+	if s.bytePos+n > s.totalSize {
+		n = s.totalSize - s.bytePos
+	}
+	return s.bytes[s.bytePos : s.bytePos+n]
+}
+
+// SkipWhitespace advances past ASCII whitespace characters (space, tab, LF, CR).
+func (s *streamImpl) SkipWhitespace() {
+	for s.bytePos < s.totalSize {
+		b := s.bytes[s.bytePos]
+		if b != ' ' && b != '\t' && b != '\n' && b != '\r' {
+			return
+		}
+		s.bytePos++
+		if b == '\n' {
+			s.location.Row++
+			s.location.Column = 1
+		} else {
+			s.location.Column++
+		}
+	}
+}
+
+// SkipUntil advances until finding the delimiter byte, returning bytes skipped.
+// Does not consume the delimiter.
+func (s *streamImpl) SkipUntil(delim byte) int {
+	start := s.bytePos
+	for s.bytePos < s.totalSize {
+		if s.bytes[s.bytePos] == delim {
+			return s.bytePos - start
+		}
+		s.bytePos++
+	}
+	return s.bytePos - start
+}
+
+// FindByte searches for a byte from current position, returning offset from current pos.
+// Returns -1 if not found. Does not advance stream.
+func (s *streamImpl) FindByte(b byte) int {
+	for i := s.bytePos; i < s.totalSize; i++ {
+		if s.bytes[i] == b {
+			return i - s.bytePos
+		}
+	}
+	return -1
+}
+
+// FindAny searches for any byte in chars, returning offset to first match.
+// Returns -1 if none found. Does not advance stream.
+func (s *streamImpl) FindAny(chars []byte) int {
+	for i := s.bytePos; i < s.totalSize; i++ {
+		for _, c := range chars {
+			if s.bytes[i] == c {
+				return i - s.bytePos
+			}
+		}
+	}
+	return -1
+}
+
+// SliceFrom returns a zero-copy byte slice from given start position to current position.
+func (s *streamImpl) SliceFrom(start int) []byte {
+	if start < 0 || start > s.bytePos {
+		return nil
+	}
+	return s.bytes[start:s.bytePos]
+}
+
+// BytePosition returns the current byte offset in the stream.
+func (s *streamImpl) BytePosition() int {
+	return s.bytePos
+}
+
+// RemainingBytes returns the unread portion of the byte stream (zero-copy).
+func (s *streamImpl) RemainingBytes() []byte {
+	return s.bytes[s.bytePos:]
 }
 
 //
@@ -201,10 +369,10 @@ func NewStreamFromReader(reader io.Reader) Stream {
 		reader:  reader,
 		shared:  shared,
 		readBuf: make([]byte, readChunkSize),
-		location: location{
-			cursor: 0,
-			row:    1,
-			column: 1,
+		location: Location{
+			Cursor: 0,
+			Row:    1,
+			Column: 1,
 		},
 	}
 
@@ -224,7 +392,7 @@ type bufferedStreamImpl struct {
 	reader   io.Reader
 	shared   *sharedBuffer // Shared buffer state (pointer ensures all clones see updates)
 	readBuf  []byte        // Temporary buffer for reading bytes (not shared)
-	location location      // Current position in stream (unique per instance)
+	location Location      // Current position in stream (unique per instance)
 }
 
 // refillBuffer reads more data from the reader and appends it to the shared buffer.
@@ -279,7 +447,7 @@ func (s *bufferedStreamImpl) refillBuffer() {
 // It refills the buffer if needed and possible.
 func (s *bufferedStreamImpl) ensureBufferHasData() {
 	// Calculate position within buffer
-	posInBuffer := s.location.cursor - int(s.shared.start)
+	posInBuffer := s.location.Cursor - int(s.shared.start)
 
 	// If buffer is full and we can discard old data safely
 	// We use a quarter of the buffer as the threshold for more aggressive discarding
@@ -333,7 +501,7 @@ func (s *bufferedStreamImpl) PeekChar() (rune, bool) {
 		return 0, false
 	}
 
-	posInBuffer := s.location.cursor - int(s.shared.start)
+	posInBuffer := s.location.Cursor - int(s.shared.start)
 
 	// If we're at the end of the buffer but not EOF, try to refill
 	if posInBuffer >= len(s.shared.data) && !s.shared.eof {
@@ -341,7 +509,7 @@ func (s *bufferedStreamImpl) PeekChar() (rune, bool) {
 	}
 
 	// Recalculate position after potential buffer management
-	posInBuffer = s.location.cursor - int(s.shared.start)
+	posInBuffer = s.location.Cursor - int(s.shared.start)
 
 	// Check again after refill
 	if posInBuffer >= len(s.shared.data) {
@@ -358,7 +526,7 @@ func (s *bufferedStreamImpl) NextChar() (rune, bool) {
 		return 0, false
 	}
 
-	posInBuffer := s.location.cursor - int(s.shared.start)
+	posInBuffer := s.location.Cursor - int(s.shared.start)
 
 	// If we're at the end of the buffer but not EOF, try to refill
 	if posInBuffer >= len(s.shared.data) && !s.shared.eof {
@@ -366,7 +534,7 @@ func (s *bufferedStreamImpl) NextChar() (rune, bool) {
 	}
 
 	// Recalculate position after potential buffer management
-	posInBuffer = s.location.cursor - int(s.shared.start)
+	posInBuffer = s.location.Cursor - int(s.shared.start)
 
 	// Check again after refill
 	if posInBuffer >= len(s.shared.data) {
@@ -379,12 +547,12 @@ func (s *bufferedStreamImpl) NextChar() (rune, bool) {
 	}
 
 	r := s.shared.data[posInBuffer]
-	s.location.cursor += 1
-	s.location.column += 1
+	s.location.Cursor += 1
+	s.location.Column += 1
 
 	if r == '\n' {
-		s.location.row += 1
-		s.location.column = 1
+		s.location.Row += 1
+		s.location.Column = 1
 	}
 
 	return r, true
@@ -406,7 +574,7 @@ func (s *bufferedStreamImpl) MatchChars(match []rune) bool {
 
 // IsEos returns true if the cursor has reached the end of stream.
 func (s *bufferedStreamImpl) IsEos() bool {
-	posInBuffer := s.location.cursor - int(s.shared.start)
+	posInBuffer := s.location.Cursor - int(s.shared.start)
 
 	// If we're within the buffer, we're not at EOS
 	if posInBuffer < len(s.shared.data) {
@@ -417,7 +585,7 @@ func (s *bufferedStreamImpl) IsEos() bool {
 	if !s.shared.eof {
 		s.ensureBufferHasData()
 		// Recalculate position after potential buffer management
-		posInBuffer = s.location.cursor - int(s.shared.start)
+		posInBuffer = s.location.Cursor - int(s.shared.start)
 		// Check again after refill
 		if posInBuffer < len(s.shared.data) {
 			return false
@@ -430,26 +598,26 @@ func (s *bufferedStreamImpl) IsEos() bool {
 
 // GetOffset returns the current byte offset within the stream.
 func (s *bufferedStreamImpl) GetOffset() int {
-	return s.location.cursor
+	return s.location.Cursor
 }
 
 // GetRow returns the current line number (1-indexed).
 func (s *bufferedStreamImpl) GetRow() int {
-	return s.location.row
+	return s.location.Row
 }
 
 // GetColumn returns the current column number (1-indexed).
 func (s *bufferedStreamImpl) GetColumn() int {
-	return s.location.column
+	return s.location.Column
 }
 
 // Reset resets the stream to the beginning (offset 0, row 1, column 1).
 // Note: This only works properly with seekable readers. For non-seekable readers,
 // this will reset the position tracking but won't actually re-read from the beginning.
 func (s *bufferedStreamImpl) Reset() {
-	s.location.cursor = 0
-	s.location.row = 1
-	s.location.column = 1
+	s.location.Cursor = 0
+	s.location.Row = 1
+	s.location.Column = 1
 
 	// If the reader is seekable, try to seek back to the beginning
 	if seeker, ok := s.reader.(io.Seeker); ok {
@@ -463,6 +631,16 @@ func (s *bufferedStreamImpl) Reset() {
 	}
 	// For non-seekable readers, we can only reset position tracking
 	// The buffer still contains data from where it was read
+}
+
+// GetLocation returns the current position in the stream.
+func (s *bufferedStreamImpl) GetLocation() Location {
+	return s.location
+}
+
+// SetLocation sets the stream position to the specified location.
+func (s *bufferedStreamImpl) SetLocation(loc Location) {
+	s.location = loc
 }
 
 //
