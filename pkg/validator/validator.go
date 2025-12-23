@@ -241,3 +241,11 @@ func defaultFunctions() map[string]FunctionRule {
 		},
 	}
 }
+
+// VisitArrayData validates an ArrayDataNode.
+// ArrayDataNode is used for JSON arrays, so validation passes through.
+func (v *Validator) VisitArrayData(node *ast.ArrayDataNode) error {
+	// ArrayDataNode represents JSON array values
+	// No schema validation needed for data nodes
+	return nil
+}

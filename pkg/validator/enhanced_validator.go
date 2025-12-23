@@ -365,3 +365,11 @@ func minInt(a, b int) int {
 	}
 	return b
 }
+
+// VisitArrayData validates an ArrayDataNode.
+// ArrayDataNode is used for JSON arrays, so validation passes through.
+func (v *SchemaValidator) VisitArrayData(node *ast.ArrayDataNode) error {
+	// ArrayDataNode represents JSON array values
+	// No schema validation needed for data nodes
+	return nil
+}
