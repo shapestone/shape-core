@@ -1,6 +1,6 @@
 # Tokenizer Framework
 
-The tokenizer framework provides a flexible, composable system for lexical analysis. It was embedded from df2-go and optimized for the Shape parser library.
+The tokenizer framework provides a flexible, composable system for lexical analysis optimized for the Shape parser library.
 
 ## Overview
 
@@ -368,16 +368,14 @@ go test -coverprofile=coverage.out ./internal/tokenizer/...
 go tool cover -html=coverage.out
 ```
 
-## Migration from df2-go
+## Development History
 
-This tokenizer was embedded from df2-go with the following changes:
+This tokenizer was embedded from an internal project with the following changes:
 
 - **Package consolidation**: Merged `streams`, `tokens`, `text`, `numbers` into single package
 - **API refinement**: Simplified interfaces for validation schema use case
 - **Position tracking**: Enhanced with Position type
 - **Documentation**: Added comprehensive godoc and examples
-
-For the original implementation, see: [df2-go repository](https://github.com/shapestone/df2-go)
 
 ## Examples
 

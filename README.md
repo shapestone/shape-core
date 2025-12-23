@@ -361,5 +361,4 @@ Shape is production-ready infrastructure:
 ## Support
 
 - **Issues:** https://github.com/shapestone/shape-core/issues
-- **Discussions:** https://github.com/shapestone/shape-core/discussions
 - **Security:** See [SECURITY.md](SECURITY.md)
