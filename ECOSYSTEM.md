@@ -10,11 +10,9 @@ Parser projects use Shape's infrastructure (AST, tokenizer, validator, grammar) 
 
 These parsers handle standard data formats:
 
-- **[shape-json](https://github.com/shapestone/shape-json)** - JSON parser with JSONPath query support
-- **[shape-yaml](https://github.com/shapestone/shape-yaml)** - YAML parser and validator
-- **[shape-xml](https://github.com/shapestone/shape-xml)** - XML parser and validator
-- **[shape-csv](https://github.com/shapestone/shape-csv)** - CSV parser with schema validation
-- **[shape-props](https://github.com/shapestone/shape-props)** - Java properties file parser
+- **[shape-json](https://github.com/shapestone/shape-json)** - JSON parser with validation
+
+Additional parsers (YAML, XML, CSV, Properties) are planned for future development.
 
 ## Related Projects
 
@@ -23,7 +21,6 @@ These parsers handle standard data formats:
 Shape is part of the broader Shapestone ecosystem:
 
 - **[Shapestone](https://github.com/shapestone)** - Organization homepage
-- **[Inkling](https://github.com/shapestone/inkling)** - Uses Shape's tokenizer for diagram parsing
 
 ## Using Shape Infrastructure
 

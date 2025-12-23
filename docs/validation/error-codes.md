@@ -268,5 +268,4 @@ fmt.Printf("Found %d unknown types\n", len(unknownTypes))
 ## See Also
 
 - [Validation README](README.md)
-- [Usage Examples](examples.md)
 - [Main README](../../README.md)

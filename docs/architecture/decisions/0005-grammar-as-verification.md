@@ -1106,7 +1106,6 @@ func TestGrammar(t *testing.T) {
 
 - [Property-Based Testing](https://hypothesis.works/articles/what-is-property-based-testing/)
 - [Grammar-Based Fuzzing](https://www.fuzzingbook.org/html/Grammars.html)
-- [Test Generation from Grammars](https://cseweb.ucsd.edu/~dstefan/papers/grammar-testing.pdf)
 - [Crafting Interpreters](https://craftinginterpreters.com/) - Grammar-driven development
 
 ## Examples

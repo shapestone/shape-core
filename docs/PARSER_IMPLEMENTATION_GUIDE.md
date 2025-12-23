@@ -2434,7 +2434,7 @@ func TestParse_Number(t *testing.T) {
 
 For questions or issues:
 - **Shape Issues:** https://github.com/shapestone/shape-core/issues
-- **Format-specific Issues:** https://github.com/shapestone/shape-{format}/issues
+- **Format-specific Issues:** File issues in your parser repository (e.g., https://github.com/shapestone/shape-json/issues)
 
 ---
 

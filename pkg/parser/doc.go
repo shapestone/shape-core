@@ -155,11 +155,5 @@
 // See the shape-json project for a complete reference implementation:
 // https://github.com/shapestone/shape-json
 //
-// Other parser implementations in the Shape ecosystem:
-//   - shape-yaml: YAML data format parser
-//   - shape-xml: XML data format parser
-//   - shape-csv: CSV data format parser
-//   - shape-props: Java properties format parser
-//
-// See ECOSYSTEM.md for the complete list of parser projects.
+// See ECOSYSTEM.md for information on other parser projects in development.
 package parser
