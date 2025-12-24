@@ -197,4 +197,4 @@ git push origin --delete feature/my-feature
 
 ## Questions?
 
-See the [Contributing Guide](contributing.md) for more details on how to contribute to Shape.
+See the [Contributing Guide](../../CONTRIBUTING.md) for more details on how to contribute to Shape.

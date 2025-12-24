@@ -641,7 +641,7 @@ dlv test ./pkg/ast/ -- -test.run TestTypeName
 ## Questions?
 
 - Review existing tests for examples
-- Check [GitHub Discussions](https://github.com/shapestone/shape-core/discussions)
+- File an issue on [GitHub](https://github.com/shapestone/shape-core/issues)
 - Ask in PR reviews
 
 Happy testing! 🧪

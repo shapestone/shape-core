@@ -264,3 +264,39 @@ func TestBufferedStreamCloneWithUTF8AcrossBoundary(t *testing.T) {
 		t.Fatalf("Original read %d runes, expected %d", count, len(expectedRunes))
 	}
 }
+
+func TestStreamFromReader_GetSetLocation(t *testing.T) {
+	// Given - Stream from reader
+	content := "hello\nworld\ntest"
+	reader := strings.NewReader(content)
+	stream := NewStreamFromReader(reader)
+
+	// Get initial location
+	loc := stream.GetLocation()
+	if loc.Row != 1 || loc.Column != 1 {
+		t.Errorf("Initial location = (%d, %d), want (1, 1)", loc.Row, loc.Column)
+	}
+
+	// Advance stream
+	stream.NextChar() // 'h'
+	stream.NextChar() // 'e'
+	stream.NextChar() // 'l'
+
+	// Set custom location
+	stream.SetLocation(Location{Row: 5, Column: 10})
+
+	// Verify location changed
+	loc = stream.GetLocation()
+	if loc.Row != 5 || loc.Column != 10 {
+		t.Errorf("After SetLocation = (%d, %d), want (5, 10)", loc.Row, loc.Column)
+	}
+
+	// Advance a character - location should be maintained
+	stream.NextChar() // 'l'
+	loc = stream.GetLocation()
+	// Note: SetLocation on bufferedStreamImpl sets location but doesn't affect
+	// the automatic line/column tracking, so we just verify SetLocation worked
+	if loc.Row < 5 {
+		t.Errorf("After NextChar, row = %d, should be >= 5", loc.Row)
+	}
+}

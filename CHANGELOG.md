@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added "Critical Understanding: AST vs Data" section clarifying Shape's AST is for validation schemas only
   - Complete rewrite with working examples using correct patterns
 - Added clarification to ADR-0005 distinguishing data parsers vs schema parsers
-- Unblocks shape-json, shape-yaml, shape-xml, shape-csv development
+- Unblocks parser development
 
 ## [0.9.1] - 2025-12-12
 
@@ -81,12 +81,10 @@ Shape v0.9.0 is the first public Apache 2.0 release of Shape as a parser infrast
 - Comprehensive test coverage (>90% across all packages)
 
 **Parser Ecosystem:**
-Shape provides infrastructure for these parser projects:
-- [shape-json](https://github.com/shapestone/shape-json) - JSON parser with JSONPath queries
-- [shape-yaml](https://github.com/shapestone/shape-yaml) - YAML validation parser
-- [shape-csv](https://github.com/shapestone/shape-csv) - CSV parsing and validation
-- [shape-xml](https://github.com/shapestone/shape-xml) - XML validation parser
-- [shape-props](https://github.com/shapestone/shape-props) - Java properties format
+Shape provides infrastructure for parser projects:
+- [shape-json](https://github.com/shapestone/shape-json) - JSON parser with validation
+
+Additional parsers (YAML, XML, CSV, Properties) are planned for future development.
 
 ### Performance
 

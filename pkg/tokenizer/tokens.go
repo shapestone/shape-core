@@ -87,6 +87,17 @@ func NewTokenizer(matchers ...Matcher) Tokenizer {
 	}
 }
 
+// NewTokenizerWithoutWhitespace constructs a Tokenizer with the given matchers
+// WITHOUT automatically prepending WhiteSpaceMatcher.
+// Use this for parsers that handle whitespace themselves (e.g., JSON parser
+// that skips whitespace inline to avoid creating tokens that are immediately discarded).
+func NewTokenizerWithoutWhitespace(matchers ...Matcher) Tokenizer {
+	return Tokenizer{
+		matchers: matchers,
+		marks:    make([]Stream, 0),
+	}
+}
+
 // Initialize initializes the tokenizer with the given input string.
 func (t *Tokenizer) Initialize(input string) {
 	t.stream = NewStream(input)
@@ -158,19 +169,34 @@ func (t *Tokenizer) NextToken() (*Token, bool) {
 		return nil, false
 	}
 
+	// Save the current position for token metadata
 	offset := t.stream.GetOffset()
 	row := t.stream.GetRow()
 	column := t.stream.GetColumn()
 
+	// Save location for rewinding on failed matches
+	startLocation := t.stream.GetLocation()
+
 	for _, matcher := range t.matchers {
-		cs := t.stream.Clone()
-		token := matcher(cs)
-		if token != nil && t.stream.MatchChars(token.value) {
-			token.offset = offset
-			token.row = row
-			token.column = column
-			return token, true
+		// Try the matcher directly on the stream (no cloning!)
+		token := matcher(t.stream)
+		if token != nil {
+			// Match succeeded - but the matcher may have consumed extra characters
+			// to determine where the match ends. We need to position the stream
+			// exactly at the end of the matched token value.
+			// Use MatchChars to correctly position the stream based on token value.
+			t.stream.SetLocation(startLocation)
+			if t.stream.MatchChars(token.value) {
+				// Stream is now correctly positioned
+				token.offset = offset
+				token.row = row
+				token.column = column
+				return token, true
+			}
+			// This shouldn't happen, but if MatchChars fails, try next matcher
 		}
+		// Match failed - rewind stream to start position for next matcher
+		t.stream.SetLocation(startLocation)
 	}
 
 	return nil, false
@@ -184,14 +210,22 @@ func (t *Tokenizer) PeekToken() (*Token, bool) {
 		return nil, false
 	}
 
+	// Save the current location to restore after peeking
+	startLocation := t.stream.GetLocation()
+
 	for _, matcher := range t.matchers {
-		cs := t.stream.Clone()
-		token := matcher(cs)
-		if token != nil && t.stream.MatchChars(token.value) {
+		// Try the matcher directly on the stream (no cloning!)
+		token := matcher(t.stream)
+		if token != nil {
+			// Match succeeded - restore position (peek doesn't advance) and return
+			t.stream.SetLocation(startLocation)
 			return token, true
 		}
+		// Match failed - rewind stream to start position for next matcher
+		t.stream.SetLocation(startLocation)
 	}
 
+	// All matchers failed - position is already restored
 	return nil, false
 }
 

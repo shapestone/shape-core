@@ -106,11 +106,9 @@ func main() {
 Shape provides the infrastructure; actual parsers are in separate projects:
 
 **Data Format Parsers**:
-- [shape-json](https://github.com/shapestone/shape-core-json) - JSON validation
-- [shape-yaml](https://github.com/shapestone/shape-core-yaml) - YAML validation
-- [shape-csv](https://github.com/shapestone/shape-core-csv) - CSV parsing
-- [shape-xml](https://github.com/shapestone/shape-core-xml) - XML validation
-- [shape-props](https://github.com/shapestone/shape-core-props) - Properties file parsing
+- [shape-json](https://github.com/shapestone/shape-json) - JSON parser with validation
+
+Additional parsers (YAML, XML, CSV, etc.) are planned for future development.
 
 ### Using the AST Framework
 
@@ -274,7 +272,7 @@ Use Shape's tokenizer to create domain-specific language parsers:
 - Diagram definitions
 - Schema formats
 
-**Example:** [Inkling](https://github.com/shapestone/inkling) uses Shape's tokenizer to parse diagram definitions.
+**Example:** Other projects in the Shapestone ecosystem use Shape's tokenizer for specialized parsing tasks.
 
 ### Build Parser Projects
 Use Shape's infrastructure to create format parsers:
@@ -294,11 +292,9 @@ Use Shape's validator framework and AST:
 Shape provides the infrastructure for these parser projects:
 
 **Data Format Parsers:**
-- [shape-json](https://github.com/shapestone/shape-core-json) - JSON validation
-- [shape-yaml](https://github.com/shapestone/shape-core-yaml) - YAML validation
-- [shape-csv](https://github.com/shapestone/shape-core-csv) - CSV parsing
-- [shape-xml](https://github.com/shapestone/shape-core-xml) - XML validation
-- [shape-props](https://github.com/shapestone/shape-core-props) - Properties file parsing
+- [shape-json](https://github.com/shapestone/shape-json) - JSON parser with validation
+
+Additional parsers (YAML, XML, CSV, etc.) are planned for future development.
 
 ## Related Projects
 
@@ -365,5 +361,4 @@ Shape is production-ready infrastructure:
 ## Support
 
 - **Issues:** https://github.com/shapestone/shape-core/issues
-- **Discussions:** https://github.com/shapestone/shape-core/discussions
 - **Security:** See [SECURITY.md](SECURITY.md)

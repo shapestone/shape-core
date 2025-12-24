@@ -998,3 +998,222 @@ func TestStreamReset(t *testing.T) {
 		t.Errorf("PeekChar() after reset = %c, want 'a'", ch)
 	}
 }
+
+func TestStream_PeekBytes(t *testing.T) {
+	stream := NewStream("hello world").(ByteStream)
+
+	// Peek first 5 bytes
+	bytes := stream.PeekBytes(5)
+	if string(bytes) != "hello" {
+		t.Errorf("PeekBytes(5) = %q, want 'hello'", string(bytes))
+	}
+
+	// Stream position shouldn't change
+	if stream.GetOffset() != 0 {
+		t.Errorf("PeekBytes shouldn't advance stream, offset = %d", stream.GetOffset())
+	}
+
+	// Peek more bytes than available
+	bytes = stream.PeekBytes(100)
+	if string(bytes) != "hello world" {
+		t.Errorf("PeekBytes(100) = %q, want 'hello world'", string(bytes))
+	}
+
+	// Advance and peek again
+	stream.NextChar() // 'h'
+	stream.NextChar() // 'e'
+	bytes = stream.PeekBytes(3)
+	if string(bytes) != "llo" {
+		t.Errorf("PeekBytes(3) after advance = %q, want 'llo'", string(bytes))
+	}
+}
+
+func TestStream_SkipWhitespace(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        string
+		wantOffset   int
+		wantRow      int
+		wantColumn   int
+		wantNextChar rune
+	}{
+		{
+			name:         "no whitespace",
+			input:        "hello",
+			wantOffset:   0,
+			wantRow:      1,
+			wantColumn:   1,
+			wantNextChar: 'h',
+		},
+		{
+			name:         "spaces",
+			input:        "   hello",
+			wantOffset:   3,
+			wantRow:      1,
+			wantColumn:   4,
+			wantNextChar: 'h',
+		},
+		{
+			name:         "tabs",
+			input:        "\t\thello",
+			wantOffset:   2,
+			wantRow:      1,
+			wantColumn:   3,
+			wantNextChar: 'h',
+		},
+		{
+			name:         "newlines",
+			input:        "\n\nhello",
+			wantOffset:   2,
+			wantRow:      3,
+			wantColumn:   1,
+			wantNextChar: 'h',
+		},
+		{
+			name:         "mixed whitespace",
+			input:        "  \t\n  hello",
+			wantOffset:   6,
+			wantRow:      2,
+			wantColumn:   3,
+			wantNextChar: 'h',
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stream := NewStream(tt.input).(ByteStream)
+			stream.SkipWhitespace()
+
+			if stream.GetOffset() != tt.wantOffset {
+				t.Errorf("SkipWhitespace() offset = %d, want %d", stream.GetOffset(), tt.wantOffset)
+			}
+			if stream.GetRow() != tt.wantRow {
+				t.Errorf("SkipWhitespace() row = %d, want %d", stream.GetRow(), tt.wantRow)
+			}
+			if stream.GetColumn() != tt.wantColumn {
+				t.Errorf("SkipWhitespace() column = %d, want %d", stream.GetColumn(), tt.wantColumn)
+			}
+
+			ch, ok := stream.PeekChar()
+			if !ok {
+				t.Error("Expected to peek character after SkipWhitespace")
+			}
+			if ch != tt.wantNextChar {
+				t.Errorf("PeekChar() after SkipWhitespace = %c, want %c", ch, tt.wantNextChar)
+			}
+		})
+	}
+}
+
+func TestStream_SkipUntil(t *testing.T) {
+	stream := NewStream("hello,world").(ByteStream)
+
+	// Skip until comma
+	skipped := stream.SkipUntil(',')
+	if skipped != 5 {
+		t.Errorf("SkipUntil(',') = %d, want 5", skipped)
+	}
+
+	// Verify stream is at comma (not past it) - use byte-level peek
+	b, ok := stream.PeekByte()
+	if !ok || b != ',' {
+		t.Errorf("PeekByte() after SkipUntil = %c, want ','", b)
+	}
+
+	// Skip past comma
+	stream.NextByte()
+
+	// Skip until non-existent character
+	skipped = stream.SkipUntil('z')
+	if skipped != 5 { // "world" = 5 chars
+		t.Errorf("SkipUntil('z') when not found = %d, want 5", skipped)
+	}
+}
+
+func TestStream_FindByte(t *testing.T) {
+	stream := NewStream("hello world").(ByteStream)
+
+	// Find space
+	offset := stream.FindByte(' ')
+	if offset != 5 {
+		t.Errorf("FindByte(' ') = %d, want 5", offset)
+	}
+
+	// Stream position shouldn't change
+	if stream.GetOffset() != 0 {
+		t.Errorf("FindByte shouldn't advance stream, offset = %d", stream.GetOffset())
+	}
+
+	// Find character that doesn't exist
+	offset = stream.FindByte('z')
+	if offset != -1 {
+		t.Errorf("FindByte('z') = %d, want -1", offset)
+	}
+
+	// Advance and find again
+	stream.NextChar() // 'h'
+	stream.NextChar() // 'e'
+	stream.NextChar() // 'l'
+	offset = stream.FindByte('o')
+	if offset != 1 { // 'o' is 1 position away from current 'l'
+		t.Errorf("FindByte('o') after advance = %d, want 1", offset)
+	}
+}
+
+func TestStream_FindAny(t *testing.T) {
+	stream := NewStream("hello world").(ByteStream)
+
+	// Find first of multiple characters
+	offset := stream.FindAny([]byte(" ,;"))
+	if offset != 5 {
+		t.Errorf("FindAny(\" ,;\") = %d, want 5", offset)
+	}
+
+	// Stream position shouldn't change
+	if stream.GetOffset() != 0 {
+		t.Errorf("FindAny shouldn't advance stream, offset = %d", stream.GetOffset())
+	}
+
+	// Find none of the characters
+	offset = stream.FindAny([]byte("xyz"))
+	if offset != -1 {
+		t.Errorf("FindAny(\"xyz\") = %d, want -1", offset)
+	}
+
+	// Empty chars
+	offset = stream.FindAny([]byte{})
+	if offset != -1 {
+		t.Errorf("FindAny([]) = %d, want -1", offset)
+	}
+}
+
+func TestStream_GetSetLocation(t *testing.T) {
+	stream := NewStream("hello\nworld")
+
+	// Get initial location
+	loc := stream.GetLocation()
+	if loc.Row != 1 || loc.Column != 1 {
+		t.Errorf("Initial location = (%d, %d), want (1, 1)", loc.Row, loc.Column)
+	}
+
+	// Advance stream
+	stream.NextChar() // 'h'
+	stream.NextChar() // 'e'
+	stream.NextChar() // 'l'
+
+	// Set custom location
+	stream.SetLocation(Location{Row: 10, Column: 20})
+
+	// Verify location changed
+	loc = stream.GetLocation()
+	if loc.Row != 10 || loc.Column != 20 {
+		t.Errorf("After SetLocation = (%d, %d), want (10, 20)", loc.Row, loc.Column)
+	}
+
+	// Advance should continue from custom location
+	stream.NextChar() // 'l'
+	loc = stream.GetLocation()
+	if loc.Row != 10 || loc.Column != 21 {
+		t.Errorf("After NextChar from custom location = (%d, %d), want (10, 21)", loc.Row, loc.Column)
+	}
+}

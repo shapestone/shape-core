@@ -839,7 +839,6 @@ schema, err := customparser.Parse(`schema input`)
 ```
 
 ## Documentation
-- [Format Specifications](../../docs/architecture/specifications/)
 - [Architecture](../../docs/architecture/ARCHITECTURE.md)
 - [API Reference](https://pkg.go.dev/github.com/shapestone/shape-core)
 

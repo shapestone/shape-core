@@ -1,5 +1,19 @@
-// Package ast provides the Abstract Syntax Tree (AST) representation for validation schemas.
-// All validation schema formats are parsed into this unified AST structure.
+// Package ast provides a universal, format-agnostic Abstract Syntax Tree (AST)
+// representation for both validation schemas and parsed data structures.
+//
+// The AST serves dual purposes:
+//  1. Schema Validation: TypeNode, FunctionNode define constraints
+//  2. Data Representation: LiteralNode, ObjectNode hold parsed values from any format
+//
+// This unified representation enables:
+//   - Source position tracking for precise error messages
+//   - Structural queries (JSONPath, XPath) via conversion to Go types
+//   - Document diffing and comparison
+//   - Programmatic construction of JSON/XML/YAML
+//   - Format transformations and conversions
+//   - Cross-format validation with consistent semantics
+//
+// Supported formats: JSON, XML, YAML, CSV, and custom formats.
 package ast
 
 // SchemaNode is the root interface for all AST nodes.

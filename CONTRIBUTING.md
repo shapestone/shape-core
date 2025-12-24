@@ -72,7 +72,7 @@ tok := tokenizer.NewTokenizer(
 
 - [Parser Implementation Guide](docs/PARSER_IMPLEMENTATION_GUIDE.md) - Complete guide for building parsers
 - [Tokenizer Documentation](pkg/tokenizer/README.md)
-- [Example Project: Inkling](https://github.com/shapestone/inkling)
+- [Example Project: shape-json](https://github.com/shapestone/shape-json) - Reference implementation
 
 ## How to Contribute
 
@@ -223,7 +223,6 @@ See [Branching Workflow](docs/contributor/BRANCHING_WORKFLOW.md) for details on:
 ## Questions?
 
 - **Issues:** [GitHub Issues](https://github.com/shapestone/shape-core/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/shapestone/shape-core/discussions)
 - **Documentation:** [docs/](docs/)
 
 Thank you for contributing to Shape! 🎉

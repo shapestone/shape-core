@@ -14,6 +14,7 @@ type SerializableNode struct {
 	Arguments  []interface{}          `json:"arguments,omitempty"`
 	Properties map[string]interface{} `json:"properties,omitempty"`
 	Element    interface{}            `json:"element,omitempty"`
+	Elements   []interface{}          `json:"elements,omitempty"`
 	Position   *Position              `json:"position,omitempty"`
 }
 
@@ -64,6 +65,20 @@ func (n *ArrayNode) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&SerializableNode{
 		Type:     "array",
 		Element:  n.elementSchema,
+		Position: &n.position,
+	})
+}
+
+// MarshalJSON implements json.Marshaler for ArrayDataNode.
+func (n *ArrayDataNode) MarshalJSON() ([]byte, error) {
+	elements := make([]interface{}, len(n.elements))
+	for i, elem := range n.elements {
+		elements[i] = elem
+	}
+
+	return json.Marshal(&SerializableNode{
+		Type:     "arraydata",
+		Elements: elements,
 		Position: &n.position,
 	})
 }
@@ -119,6 +134,23 @@ func UnmarshalSchemaNode(data []byte) (SchemaNode, error) {
 		}
 
 		return NewArrayNode(elemNode, pos), nil
+
+	case "arraydata":
+		elements := make([]SchemaNode, len(sn.Elements))
+		for i, elem := range sn.Elements {
+			elemBytes, err := json.Marshal(elem)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal array element %d: %w", i, err)
+			}
+
+			elemNode, err := UnmarshalSchemaNode(elemBytes)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unmarshal array element %d: %w", i, err)
+			}
+
+			elements[i] = elemNode
+		}
+		return NewArrayDataNode(elements, pos), nil
 
 	default:
 		return nil, fmt.Errorf("unknown node type: %q", sn.Type)

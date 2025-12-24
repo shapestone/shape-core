@@ -11,7 +11,7 @@ This guide will help you set up your local development environment for contribut
 
 ### Recommended
 
-- **golangci-lint** - For code linting ([Installation](https://golangci-lint.run/usage/install/))
+- **golangci-lint** - For code linting ([Installation](https://golangci-lint.run/welcome/install/))
 - **Make** - For build automation (usually pre-installed on macOS/Linux)
 - **IDE with Go support** - VS Code, GoLand, or similar
 
@@ -392,7 +392,6 @@ go tool pprof mem.prof
 ## Getting Help
 
 - **Issues:** [GitHub Issues](https://github.com/shapestone/shape-core/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/shapestone/shape-core/discussions)
 - **Documentation:** [docs/](../)
 - **Examples:** [examples/](../../examples/)
 
@@ -404,6 +403,5 @@ After setting up your environment:
 2. Review [Testing Guide](testing-guide.md)
 3. Check [Architecture Documentation](../architecture/ARCHITECTURE.md)
 4. Browse [existing issues](https://github.com/shapestone/shape-core/issues)
-5. Join discussions on [GitHub Discussions](https://github.com/shapestone/shape-core/discussions)
 
 Happy coding! 🚀
