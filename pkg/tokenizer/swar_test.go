@@ -125,6 +125,9 @@ func TestFindAnyByte(t *testing.T) {
 		{"multiple chars", []byte("hello"), []byte("lo"), 2},
 		{"no match", []byte("hello"), []byte("xyz"), -1},
 		{"match at start", []byte("hello"), []byte("h"), 0},
+		{"long string multiple chars", []byte("this is a very long string for testing SWAR optimization paths"), []byte("WR"), 40},
+		{"many target chars", []byte("abcdefghijklmnop"), []byte("xyz123"), -1},
+		{"match second char", []byte("hello world"), []byte("ow"), 4},
 	}
 
 	for _, tt := range tests {
@@ -132,6 +135,40 @@ func TestFindAnyByte(t *testing.T) {
 			got := FindAnyByte(tt.data, tt.chars)
 			if got != tt.want {
 				t.Errorf("FindAnyByte() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSkipWhitespace_LongStrings(t *testing.T) {
+	// Test with various long whitespace sequences to hit SWAR paths
+	tests := []struct {
+		name string
+		data []byte
+		want int
+	}{
+		{
+			"long spaces",
+			[]byte("                        hello"),
+			24,
+		},
+		{
+			"mixed whitespace long",
+			[]byte("  \t  \n  \r  \t\t   content"),
+			16,
+		},
+		{
+			"16+ spaces",
+			[]byte("                    x"),
+			20,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SkipWhitespace(tt.data)
+			if got != tt.want {
+				t.Errorf("SkipWhitespace() = %d, want %d", got, tt.want)
 			}
 		})
 	}

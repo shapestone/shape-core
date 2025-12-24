@@ -110,6 +110,22 @@ func TestLiteralNode(t *testing.T) {
 	}
 }
 
+func TestLiteralNode_Pooling(t *testing.T) {
+	pos := NewPosition(0, 1, 1)
+
+	// Create and release a node
+	node1 := NewLiteralNode("test1", pos)
+	ReleaseLiteralNode(node1)
+
+	// Create another node - should reuse from pool
+	node2 := NewLiteralNode("test2", pos)
+
+	// Verify the new node works correctly
+	if node2.Value() != "test2" {
+		t.Errorf("Expected 'test2', got %v", node2.Value())
+	}
+}
+
 //
 // TypeNode Tests
 //
@@ -230,6 +246,34 @@ func TestArrayNode(t *testing.T) {
 
 	if node.Position() != pos {
 		t.Errorf("Position mismatch")
+	}
+}
+
+func TestObjectNode_Pooling(t *testing.T) {
+	pos := NewPosition(0, 1, 1)
+
+	// Create and release a node
+	props1 := map[string]SchemaNode{
+		"test": NewLiteralNode("value1", pos),
+	}
+	node1 := NewObjectNode(props1, pos)
+	ReleaseObjectNode(node1)
+
+	// Create another node - should reuse from pool
+	props2 := map[string]SchemaNode{
+		"test": NewLiteralNode("value2", pos),
+	}
+	node2 := NewObjectNode(props2, pos)
+
+	// Verify the new node works correctly
+	prop, ok := node2.GetProperty("test")
+	if !ok {
+		t.Error("Expected to find 'test' property")
+	}
+	if lit, ok := prop.(*LiteralNode); ok {
+		if lit.Value() != "value2" {
+			t.Errorf("Expected 'value2', got %v", lit.Value())
+		}
 	}
 }
 
@@ -493,4 +537,129 @@ func TestTreePrint(t *testing.T) {
 			t.Errorf("TreePrint output missing %q:\n%s", substr, result)
 		}
 	}
+}
+
+//
+// ArrayDataNode Tests
+//
+
+func TestArrayDataNode(t *testing.T) {
+	pos := NewPosition(0, 1, 1)
+
+	elements := []SchemaNode{
+		NewLiteralNode("item1", pos),
+		NewLiteralNode("item2", pos),
+		NewLiteralNode(int64(42), pos),
+	}
+
+	node := NewArrayDataNode(elements, pos)
+
+	if node.Type() != NodeTypeArrayData {
+		t.Errorf("Expected NodeTypeArrayData, got %v", node.Type())
+	}
+
+	if node.Len() != 3 {
+		t.Errorf("Expected length 3, got %d", node.Len())
+	}
+
+	if node.Position() != pos {
+		t.Errorf("Expected position %v, got %v", pos, node.Position())
+	}
+
+	// Test Elements()
+	retrievedElements := node.Elements()
+	if len(retrievedElements) != 3 {
+		t.Errorf("Expected 3 elements, got %d", len(retrievedElements))
+	}
+
+	// Test Get()
+	elem := node.Get(0)
+	if elem == nil {
+		t.Error("Expected element at index 0, got nil")
+	}
+	if lit, ok := elem.(*LiteralNode); ok {
+		if lit.Value() != "item1" {
+			t.Errorf("Expected 'item1', got %v", lit.Value())
+		}
+	} else {
+		t.Error("Expected LiteralNode at index 0")
+	}
+
+	// Test out of bounds
+	if node.Get(10) != nil {
+		t.Error("Expected nil for out of bounds index")
+	}
+
+	if node.Get(-1) != nil {
+		t.Error("Expected nil for negative index")
+	}
+
+	// Test String()
+	str := node.String()
+	if !strings.Contains(str, "[") || !strings.Contains(str, "]") {
+		t.Errorf("Expected array string representation, got: %s", str)
+	}
+}
+
+func TestArrayDataNode_Pooling(t *testing.T) {
+	pos := NewPosition(0, 1, 1)
+
+	// Create and release a node
+	elements1 := []SchemaNode{
+		NewLiteralNode("test", pos),
+	}
+	node1 := NewArrayDataNode(elements1, pos)
+
+	// Release it back to the pool
+	ReleaseArrayDataNode(node1)
+
+	// Create another node - should reuse from pool
+	elements2 := []SchemaNode{
+		NewLiteralNode("test2", pos),
+	}
+	node2 := NewArrayDataNode(elements2, pos)
+
+	// Verify the new node works correctly
+	if node2.Len() != 1 {
+		t.Errorf("Expected length 1, got %d", node2.Len())
+	}
+
+	if elem := node2.Get(0); elem != nil {
+		if lit, ok := elem.(*LiteralNode); ok {
+			if lit.Value() != "test2" {
+				t.Errorf("Expected 'test2', got %v", lit.Value())
+			}
+		}
+	}
+}
+
+func TestArrayDataNode_Visitor(t *testing.T) {
+	pos := NewPosition(0, 1, 1)
+
+	elements := []SchemaNode{
+		NewLiteralNode("test", pos),
+	}
+	node := NewArrayDataNode(elements, pos)
+
+	// Test visitor pattern
+	visitor := &testVisitor{}
+	err := node.Accept(visitor)
+	if err != nil {
+		t.Errorf("Accept() error = %v", err)
+	}
+
+	if !visitor.visitedArrayData {
+		t.Error("Visitor did not visit ArrayDataNode")
+	}
+}
+
+// Helper visitor for testing
+type testVisitor struct {
+	BaseVisitor
+	visitedArrayData bool
+}
+
+func (v *testVisitor) VisitArrayData(node *ArrayDataNode) error {
+	v.visitedArrayData = true
+	return nil
 }
