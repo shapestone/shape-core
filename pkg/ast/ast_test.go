@@ -703,3 +703,19 @@ func (v *testVisitor) VisitArrayData(node *ArrayDataNode) error {
 	v.visitedArrayData = true
 	return nil
 }
+
+// TestBaseVisitor_VisitArrayData tests the default BaseVisitor implementation
+func TestBaseVisitor_VisitArrayData(t *testing.T) {
+	pos := NewPosition(0, 1, 1)
+	elements := []SchemaNode{
+		NewLiteralNode("value", pos),
+	}
+	node := NewArrayDataNode(elements, pos)
+
+	// Use BaseVisitor directly (not overridden)
+	visitor := &BaseVisitor{}
+	err := visitor.VisitArrayData(node)
+	if err != nil {
+		t.Errorf("BaseVisitor.VisitArrayData() error = %v, want nil", err)
+	}
+}
