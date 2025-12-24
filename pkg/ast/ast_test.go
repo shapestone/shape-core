@@ -124,6 +124,22 @@ func TestLiteralNode_Pooling(t *testing.T) {
 	if node2.Value() != "test2" {
 		t.Errorf("Expected 'test2', got %v", node2.Value())
 	}
+
+	// Test releasing nil node - should not panic
+	ReleaseLiteralNode(nil)
+}
+
+func TestLiteralNode_String_DefaultCase(t *testing.T) {
+	pos := NewPosition(0, 1, 1)
+
+	// Test with a non-standard type (uint32) to hit the default case
+	node := NewLiteralNode(uint32(42), pos)
+	result := node.String()
+
+	// The default case uses fmt.Sprintf("%v", v)
+	if result != "42" {
+		t.Errorf("Expected '42', got %s", result)
+	}
 }
 
 //
@@ -287,6 +303,9 @@ func TestObjectNode_Pooling(t *testing.T) {
 			t.Errorf("Expected 'value2', got %v", lit.Value())
 		}
 	}
+
+	// Test releasing nil node - should not panic
+	ReleaseObjectNode(nil)
 }
 
 //
@@ -649,6 +668,9 @@ func TestArrayDataNode_Pooling(t *testing.T) {
 			}
 		}
 	}
+
+	// Test releasing nil node - should not panic
+	ReleaseArrayDataNode(nil)
 }
 
 func TestArrayDataNode_Visitor(t *testing.T) {

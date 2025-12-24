@@ -729,3 +729,27 @@ func TestSchemaValidator_ArrayDataNode(t *testing.T) {
 		t.Errorf("ValidateAll(ArrayDataNode) found %d errors, want 0. Errors: %v", len(result.Errors), result.Errors)
 	}
 }
+
+func TestSchemaValidator_FormatMaxArgs(t *testing.T) {
+	validator := NewSchemaValidator()
+
+	tests := []struct {
+		name     string
+		maxArgs  int
+		expected string
+	}{
+		{"unlimited", -1, "unlimited"},
+		{"zero", 0, "0"},
+		{"one", 1, "1"},
+		{"multiple", 5, "5"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := validator.formatMaxArgs(tt.maxArgs)
+			if result != tt.expected {
+				t.Errorf("formatMaxArgs(%d) = %q, want %q", tt.maxArgs, result, tt.expected)
+			}
+		})
+	}
+}
