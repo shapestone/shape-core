@@ -1030,12 +1030,12 @@ func TestStream_PeekBytes(t *testing.T) {
 
 func TestStream_SkipWhitespace(t *testing.T) {
 	tests := []struct {
-		name           string
-		input          string
-		wantOffset     int
-		wantRow        int
-		wantColumn     int
-		wantNextChar   rune
+		name         string
+		input        string
+		wantOffset   int
+		wantRow      int
+		wantColumn   int
+		wantNextChar rune
 	}{
 		{
 			name:         "no whitespace",
