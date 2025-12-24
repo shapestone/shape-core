@@ -723,7 +723,7 @@ func TestBaseVisitor_VisitArrayData(t *testing.T) {
 // TestArrayDataNode_Comprehensive tests ArrayDataNode with multiple operations
 func TestArrayDataNode_Comprehensive(t *testing.T) {
 	pos := NewPosition(100, 5, 10)
-	
+
 	// Create array with various element types
 	elements := []SchemaNode{
 		NewLiteralNode(nil, pos),
@@ -735,34 +735,34 @@ func TestArrayDataNode_Comprehensive(t *testing.T) {
 		NewTypeNode("UUID", pos),
 		NewFunctionNode("Test", []interface{}{1, 2}, pos),
 	}
-	
+
 	node := NewArrayDataNode(elements, pos)
-	
+
 	// Test all accessors
 	if node.Type() != NodeTypeArrayData {
 		t.Errorf("Type() = %v, want NodeTypeArrayData", node.Type())
 	}
-	
+
 	if node.Len() != len(elements) {
 		t.Errorf("Len() = %d, want %d", node.Len(), len(elements))
 	}
-	
+
 	if node.Position() != pos {
 		t.Errorf("Position() = %v, want %v", node.Position(), pos)
 	}
-	
+
 	// Test Elements() returns same slice
 	if elems := node.Elements(); len(elems) != len(elements) {
 		t.Errorf("Elements() length = %d, want %d", len(elems), len(elements))
 	}
-	
+
 	// Test Get() for all valid indices
 	for i := 0; i < node.Len(); i++ {
 		if elem := node.Get(i); elem == nil {
 			t.Errorf("Get(%d) = nil, want non-nil", i)
 		}
 	}
-	
+
 	// Test Get() with various out-of-bounds indices
 	outOfBoundsIndices := []int{-100, -10, -1, node.Len(), node.Len() + 1, node.Len() + 100}
 	for _, idx := range outOfBoundsIndices {
@@ -770,38 +770,38 @@ func TestArrayDataNode_Comprehensive(t *testing.T) {
 			t.Errorf("Get(%d) = %v, want nil", idx, elem)
 		}
 	}
-	
+
 	// Test String() contains all elements
 	str := node.String()
 	if !strings.HasPrefix(str, "[") || !strings.HasSuffix(str, "]") {
 		t.Errorf("String() = %q, want format [...]", str)
 	}
-	
+
 	// Test visitor pattern
 	visitor := &BaseVisitor{}
 	if err := node.Accept(visitor); err != nil {
 		t.Errorf("Accept() error = %v, want nil", err)
 	}
-	
+
 	// Test pooling: release and recreate
 	ReleaseArrayDataNode(node)
-	
+
 	newNode := NewArrayDataNode([]SchemaNode{NewLiteralNode("reused", pos)}, pos)
 	if newNode.Len() != 1 {
 		t.Errorf("After pooling, new node Len() = %d, want 1", newNode.Len())
 	}
-	
+
 	ReleaseArrayDataNode(newNode)
 }
 
 // TestLiteralNode_Comprehensive tests LiteralNode with all value types
 func TestLiteralNode_Comprehensive(t *testing.T) {
 	pos := NewPosition(200, 10, 20)
-	
+
 	testCases := []struct {
-		name     string
-		value    interface{}
-		wantStr  string
+		name    string
+		value   interface{}
+		wantStr string
 	}{
 		{"nil", nil, "null"},
 		{"true", true, "true"},
@@ -818,42 +818,42 @@ func TestLiteralNode_Comprehensive(t *testing.T) {
 		{"uint32", uint32(42), "42"},
 		{"uint64", uint64(100), "100"},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			node := NewLiteralNode(tc.value, pos)
-			
+
 			// Test Type()
 			if node.Type() != NodeTypeLiteral {
 				t.Errorf("Type() = %v, want NodeTypeLiteral", node.Type())
 			}
-			
+
 			// Test Value()
 			if node.Value() != tc.value {
 				t.Errorf("Value() = %v, want %v", node.Value(), tc.value)
 			}
-			
+
 			// Test Position()
 			if node.Position() != pos {
 				t.Errorf("Position() = %v, want %v", node.Position(), pos)
 			}
-			
+
 			// Test String()
 			if str := node.String(); str != tc.wantStr {
 				t.Errorf("String() = %q, want %q", str, tc.wantStr)
 			}
-			
+
 			// Test Accept()
 			visitor := &BaseVisitor{}
 			if err := node.Accept(visitor); err != nil {
 				t.Errorf("Accept() error = %v, want nil", err)
 			}
-			
+
 			// Test pooling
 			ReleaseLiteralNode(node)
 		})
 	}
-	
+
 	// Test pool reuse
 	node1 := NewLiteralNode("first", pos)
 	ReleaseLiteralNode(node1)
@@ -867,7 +867,7 @@ func TestLiteralNode_Comprehensive(t *testing.T) {
 // TestObjectNode_Comprehensive tests ObjectNode with various properties
 func TestObjectNode_Comprehensive(t *testing.T) {
 	pos := NewPosition(300, 15, 25)
-	
+
 	// Create object with various property types
 	props := map[string]SchemaNode{
 		"null":     NewLiteralNode(nil, pos),
@@ -878,25 +878,25 @@ func TestObjectNode_Comprehensive(t *testing.T) {
 		"type":     NewTypeNode("UUID", pos),
 		"function": NewFunctionNode("Test", []interface{}{1}, pos),
 	}
-	
+
 	node := NewObjectNode(props, pos)
-	
+
 	// Test Type()
 	if node.Type() != NodeTypeObject {
 		t.Errorf("Type() = %v, want NodeTypeObject", node.Type())
 	}
-	
+
 	// Test Position()
 	if node.Position() != pos {
 		t.Errorf("Position() = %v, want %v", node.Position(), pos)
 	}
-	
+
 	// Test Properties()
 	retrievedProps := node.Properties()
 	if len(retrievedProps) != len(props) {
 		t.Errorf("Properties() length = %d, want %d", len(retrievedProps), len(props))
 	}
-	
+
 	// Test GetProperty() for all keys
 	for key := range props {
 		prop, ok := node.GetProperty(key)
@@ -907,34 +907,34 @@ func TestObjectNode_Comprehensive(t *testing.T) {
 			t.Errorf("GetProperty(%q) = nil", key)
 		}
 	}
-	
+
 	// Test GetProperty() with non-existent key
 	if prop, ok := node.GetProperty("nonexistent"); ok || prop != nil {
 		t.Errorf("GetProperty(nonexistent) = (%v, %v), want (nil, false)", prop, ok)
 	}
-	
+
 	// Test String() contains braces
 	str := node.String()
 	if !strings.Contains(str, "{") || !strings.Contains(str, "}") {
 		t.Errorf("String() = %q, want format {...}", str)
 	}
-	
+
 	// Test empty object
 	emptyNode := NewObjectNode(map[string]SchemaNode{}, pos)
 	if emptyNode.String() != "{}" {
 		t.Errorf("Empty object String() = %q, want '{}'", emptyNode.String())
 	}
-	
+
 	// Test Accept()
 	visitor := &BaseVisitor{}
 	if err := node.Accept(visitor); err != nil {
 		t.Errorf("Accept() error = %v, want nil", err)
 	}
-	
+
 	// Test pooling
 	ReleaseObjectNode(node)
 	ReleaseObjectNode(emptyNode)
-	
+
 	newNode := NewObjectNode(map[string]SchemaNode{"key": NewLiteralNode("value", pos)}, pos)
 	if _, ok := newNode.GetProperty("key"); !ok {
 		t.Error("After pooling, new node should have 'key' property")
