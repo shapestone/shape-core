@@ -7,10 +7,10 @@ import (
 
 func TestFindByte(t *testing.T) {
 	tests := []struct {
-		name  string
-		data  []byte
-		find  byte
-		want  int
+		name string
+		data []byte
+		find byte
+		want int
 	}{
 		{"empty", []byte{}, 'a', -1},
 		{"single match", []byte("hello"), 'h', 0},

@@ -22,6 +22,7 @@ var literalNodePool = sync.Pool{
 
 // NewLiteralNode creates a new literal node using object pooling.
 func NewLiteralNode(value interface{}, pos Position) *LiteralNode {
+	// nolint:errcheck // sync.Pool.Get() doesn't return an error
 	n := literalNodePool.Get().(*LiteralNode)
 	n.value = value
 	n.position = pos

@@ -23,14 +23,16 @@ const (
 	msb uint64 = 0x8080808080808080
 
 	// low7 masks the lower 7 bits of each byte (0x7F7F...7F)
+	// nolint:unused // Reserved for future SWAR optimizations
 	low7 uint64 = 0x7F7F7F7F7F7F7F7F
 )
 
 // broadcast replicates a byte value across all 8 positions in a uint64.
 //
 // Example:
-//   broadcast(' ') -> 0x2020202020202020
-//   broadcast('"')  -> 0x2222222222222222
+//
+//	broadcast(' ') -> 0x2020202020202020
+//	broadcast('"')  -> 0x2222222222222222
 func broadcast(b byte) uint64 {
 	return lsb * uint64(b)
 }
@@ -55,8 +57,9 @@ func hasZeroByte(x uint64) uint64 {
 // Performance: 2-4x faster than bytes.IndexByte for typical JSON sizes.
 //
 // Example:
-//   FindByte([]byte(`hello world`), ' ') -> 5
-//   FindByte([]byte(`no match`), 'z') -> -1
+//
+//	FindByte([]byte(`hello world`), ' ') -> 5
+//	FindByte([]byte(`no match`), 'z') -> -1
 func FindByte(data []byte, b byte) int {
 	if len(data) == 0 {
 		return -1
@@ -100,8 +103,9 @@ func FindByte(data []byte, b byte) int {
 // For larger char sets, falls back to scanning.
 //
 // Example:
-//   FindAnyByte([]byte(`hello`), []byte(`lo`)) -> 2  // 'l' found first
-//   FindAnyByte([]byte(`hello`), []byte(`xyz`)) -> -1
+//
+//	FindAnyByte([]byte(`hello`), []byte(`lo`)) -> 2  // 'l' found first
+//	FindAnyByte([]byte(`hello`), []byte(`xyz`)) -> -1
 func FindAnyByte(data []byte, chars []byte) int {
 	if len(data) == 0 || len(chars) == 0 {
 		return -1
@@ -165,8 +169,9 @@ func FindAnyByte(data []byte, chars []byte) int {
 // Uses SWAR to scan 8 bytes at once for faster whitespace skipping.
 //
 // Example:
-//   SkipWhitespace([]byte(`   hello`)) -> 3
-//   SkipWhitespace([]byte(`\t\n  data`)) -> 4
+//
+//	SkipWhitespace([]byte(`   hello`)) -> 3
+//	SkipWhitespace([]byte(`\t\n  data`)) -> 4
 func SkipWhitespace(data []byte) int {
 	i := 0
 
@@ -218,9 +223,10 @@ func SkipWhitespace(data []byte) int {
 // Uses SWAR to check 8 bytes in parallel for escape conditions.
 //
 // Example:
-//   NeedsEscaping([]byte(`hello`)) -> false
-//   NeedsEscaping([]byte(`hello"world`)) -> true  (contains quote)
-//   NeedsEscaping([]byte(`line\nbreak`)) -> true  (contains backslash)
+//
+//	NeedsEscaping([]byte(`hello`)) -> false
+//	NeedsEscaping([]byte(`hello"world`)) -> true  (contains quote)
+//	NeedsEscaping([]byte(`line\nbreak`)) -> true  (contains backslash)
 func NeedsEscaping(data []byte) bool {
 	if len(data) == 0 {
 		return false
@@ -266,8 +272,9 @@ func NeedsEscaping(data []byte) bool {
 // Optimized for JSON string scanning.
 //
 // Example:
-//   FindEscapeOrQuote([]byte(`hello"world`)) -> 5  (quote)
-//   FindEscapeOrQuote([]byte(`hello\nworld`)) -> 5  (backslash)
+//
+//	FindEscapeOrQuote([]byte(`hello"world`)) -> 5  (quote)
+//	FindEscapeOrQuote([]byte(`hello\nworld`)) -> 5  (backslash)
 func FindEscapeOrQuote(data []byte) int {
 	if len(data) == 0 {
 		return -1

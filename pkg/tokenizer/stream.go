@@ -87,12 +87,12 @@ func NewStream(str string) Stream {
 	}
 
 	return &streamImpl{
-		uuid:         uuid.New(),
-		bytes:        bytes,
-		data:         runes,
-		length:       len(runes),
-		bytePos:      0,
-		totalSize:    len(bytes),
+		uuid:          uuid.New(),
+		bytes:         bytes,
+		data:          runes,
+		length:        len(runes),
+		bytePos:       0,
+		totalSize:     len(bytes),
 		runeToBytePos: runeToBytePos,
 		isASCIIOnly:   isASCIIOnly,
 		location: Location{
@@ -112,15 +112,15 @@ func NewStream(str string) Stream {
 //   - runeToBytePos: Maps rune index to byte position for synchronization
 //   - isASCIIOnly: True if all content is ASCII (len(runes) == len(bytes))
 type streamImpl struct {
-	uuid         uuid.UUID
-	bytes        []byte // Original byte data
-	data         []rune // Decoded rune data
-	length       int    // Number of runes
-	totalSize    int    // Number of bytes
-	bytePos      int    // Current byte position
-	location     Location
-	runeToBytePos []int  // Maps rune index -> byte offset for sync
-	isASCIIOnly   bool   // True if stream is pure ASCII
+	uuid          uuid.UUID
+	bytes         []byte // Original byte data
+	data          []rune // Decoded rune data
+	length        int    // Number of runes
+	totalSize     int    // Number of bytes
+	bytePos       int    // Current byte position
+	location      Location
+	runeToBytePos []int // Maps rune index -> byte offset for sync
+	isASCIIOnly   bool  // True if stream is pure ASCII
 }
 
 // Location holds position information within the stream.
@@ -133,13 +133,13 @@ type Location struct {
 // Clone creates a copy of the stream for backtracking support.
 func (s *streamImpl) Clone() Stream {
 	return &streamImpl{
-		uuid:         s.uuid,
-		bytes:        s.bytes,
-		data:         s.data,
-		length:       s.length,
-		totalSize:    s.totalSize,
-		bytePos:      s.bytePos,
-		location:     s.location,
+		uuid:          s.uuid,
+		bytes:         s.bytes,
+		data:          s.data,
+		length:        s.length,
+		totalSize:     s.totalSize,
+		bytePos:       s.bytePos,
+		location:      s.location,
 		runeToBytePos: s.runeToBytePos, // Shared mapping (read-only)
 		isASCIIOnly:   s.isASCIIOnly,
 	}
@@ -233,7 +233,7 @@ func (s *streamImpl) Reset() {
 	s.location.Cursor = 0
 	s.location.Row = 1
 	s.location.Column = 1
-	s.bytePos = 0  // Already at position 0
+	s.bytePos = 0 // Already at position 0
 }
 
 // GetLocation returns the current position in the stream.
@@ -277,7 +277,7 @@ func (s *streamImpl) syncRuneCursorFromBytePos() {
 
 	// UTF-8: Check if we're already in sync (common after NextChar)
 	if s.location.Cursor < len(s.runeToBytePos) &&
-	   s.runeToBytePos[s.location.Cursor] == s.bytePos {
+		s.runeToBytePos[s.location.Cursor] == s.bytePos {
 		return
 	}
 

@@ -24,6 +24,7 @@ var arrayDataNodePool = sync.Pool{
 
 // NewArrayDataNode creates a new array data node using object pooling.
 func NewArrayDataNode(elements []SchemaNode, pos Position) *ArrayDataNode {
+	// nolint:errcheck // sync.Pool.Get() doesn't return an error
 	n := arrayDataNodePool.Get().(*ArrayDataNode)
 	n.elements = elements
 	n.position = pos

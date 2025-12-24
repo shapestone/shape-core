@@ -24,6 +24,7 @@ var objectNodePool = sync.Pool{
 
 // NewObjectNode creates a new object node using object pooling.
 func NewObjectNode(properties map[string]SchemaNode, pos Position) *ObjectNode {
+	// nolint:errcheck // sync.Pool.Get() doesn't return an error
 	n := objectNodePool.Get().(*ObjectNode)
 	n.properties = properties
 	n.position = pos
