@@ -181,6 +181,18 @@ func TestFunctionNode(t *testing.T) {
 	if node2.String() != "String(5, +)" {
 		t.Errorf("Expected string 'String(5, +)', got %s", node2.String())
 	}
+
+	// Test with nil argument
+	node3 := NewFunctionNode("Test", []interface{}{nil}, pos)
+	if node3.String() != "Test(null)" {
+		t.Errorf("Expected string 'Test(null)', got %s", node3.String())
+	}
+
+	// Test with boolean arguments
+	node4 := NewFunctionNode("Bool", []interface{}{true, false}, pos)
+	if node4.String() != "Bool(true, false)" {
+		t.Errorf("Expected string 'Bool(true, false)', got %s", node4.String())
+	}
 }
 
 //
@@ -598,6 +610,12 @@ func TestArrayDataNode(t *testing.T) {
 	str := node.String()
 	if !strings.Contains(str, "[") || !strings.Contains(str, "]") {
 		t.Errorf("Expected array string representation, got: %s", str)
+	}
+
+	// Test String() with empty array
+	emptyNode := NewArrayDataNode([]SchemaNode{}, pos)
+	if emptyNode.String() != "[]" {
+		t.Errorf("Empty array String() = %q, want '[]'", emptyNode.String())
 	}
 }
 
