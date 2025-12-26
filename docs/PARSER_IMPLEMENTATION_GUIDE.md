@@ -18,6 +18,7 @@
 8. [Documentation Requirements](#documentation-requirements)
 9. [CI/CD Setup](#cicd-setup)
 10. [Complete Working Example](#complete-working-example)
+11. [Performance Optimization Strategies](#performance-optimization-strategies)
 
 ---
 
@@ -2427,6 +2428,387 @@ func TestParse_Number(t *testing.T) {
    - Returns universal AST nodes
    - Provides both Parse (→ AST) and Unmarshal (→ structs) APIs
    - Independent versioning
+
+---
+
+## Performance Optimization Strategies
+
+### Overview
+
+While the universal AST provides essential features (position tracking, format fidelity, querying), constructing a full AST has overhead. For parser projects where performance is critical, Shape supports **dual-path architecture** as an advanced optimization strategy.
+
+### The Dual-Path Architecture Pattern
+
+The dual-path pattern provides **two independent implementations** for different use cases:
+
+1. **Fast Path** - Direct parsing without AST construction (4-10x faster)
+2. **AST Path** - Full AST construction with all features
+
+The API layer automatically routes requests to the appropriate path based on which function the user calls.
+
+### When to Use Dual-Path Architecture
+
+**Consider dual-path when:**
+- ✅ Performance is a critical requirement (e.g., high-throughput servers, large files)
+- ✅ 80%+ of use cases only need validation or unmarshaling (no AST features)
+- ✅ You have resources to maintain two parser implementations
+- ✅ Benchmarks show significant performance gains justify the complexity
+
+**Skip dual-path when:**
+- ❌ Parser is primarily used for transformations/queries (AST needed)
+- ❌ Format is complex and two implementations would be error-prone
+- ❌ Performance is already adequate with AST-only approach
+- ❌ Team size is small and maintenance burden is a concern
+
+### Reference Implementation: shape-json
+
+The **shape-json** project demonstrates dual-path architecture in production:
+
+```
+shape-json/
+├── pkg/json/
+│   ├── parser.go          # Public API - routes to appropriate path
+│   ├── unmarshal.go       # Routes to fast path
+│   └── validate.go        # Routes to fast path
+├── internal/fastparser/   # Fast path implementation
+│   ├── parser.go          # Direct byte-level parsing
+│   └── unmarshal.go       # Direct Go type population
+└── internal/parser/       # AST path implementation
+    └── parser.go          # Full AST construction
+```
+
+**Performance Results** (from shape-json benchmarks):
+
+```
+Benchmark (410 KB JSON file):
+┌─────────────┬──────────┬────────────┬─────────────┐
+│ Path        │ Time     │ Memory     │ Allocations │
+├─────────────┼──────────┼────────────┼─────────────┤
+│ Fast Path   │  1.69 ms │  1.29 MB   │  36,756     │
+│ AST Path    │ 16.45 ms │ 13.19 MB   │ 230,025     │
+├─────────────┼──────────┼────────────┼─────────────┤
+│ Improvement │ 9.7x     │ 10.2x      │ 6.3x        │
+└─────────────┴──────────┴────────────┴─────────────┘
+```
+
+### Architectural Diagram
+
+```
+┌──────────────────────────────────────┐
+│         User API Call                │
+└───────────────┬──────────────────────┘
+                │
+        ┌───────┴────────┐
+        │                │
+        v                v
+┌───────────────┐  ┌──────────────────┐
+│  FAST PATH    │  │   AST PATH       │
+│  (Optimized)  │  │ (Full Features)  │
+├───────────────┤  ├──────────────────┤
+│ APIs:         │  │ APIs:            │
+│ - Unmarshal() │  │ - Parse()        │
+│ - Validate()  │  │ - ParseReader()  │
+│ - Marshal()   │  │ - ParseDocument()│
+│               │  │ - JSONPath()     │
+├───────────────┤  ├──────────────────┤
+│ Direct Parse  │  │ Tokenization     │
+│ ↓             │  │ ↓                │
+│ Go Values     │  │ AST Construction │
+│               │  │ ↓                │
+│ Characteristics│ │ AST Nodes        │
+│ - 9.7x faster │  │ ↓                │
+│ - 10.2x less  │  │ Type Conversion  │
+│   memory      │  │ (if needed)      │
+│ - 6.3x fewer  │  │                  │
+│   allocations │  │ Characteristics: │
+│ - No position │  │ - Position info  │
+│   tracking    │  │ - Full features  │
+│ - No AST      │  │ - Query support  │
+└───────────────┘  └──────────────────┘
+```
+
+### Implementation Pattern
+
+**Public API Layer** (routes to appropriate path):
+
+```go
+package json
+
+import (
+    "github.com/shapestone/shape-core/pkg/ast"
+    "github.com/shapestone/shape-json/internal/parser"     // AST path
+    "github.com/shapestone/shape-json/internal/fastparser" // Fast path
+)
+
+// Parse returns universal AST (AST path)
+// Use this when you need: position tracking, queries, transformations
+func Parse(input string) (ast.SchemaNode, error) {
+    p := parser.NewParser(input)
+    return p.Parse()  // Full AST construction
+}
+
+// Unmarshal populates Go struct (Fast path)
+// Use this when you only need: data extraction to Go types
+func Unmarshal(data []byte, v interface{}) error {
+    // Fast path: Direct parsing without AST construction (4-5x faster)
+    return fastparser.Unmarshal(data, v)
+}
+
+// Validate checks JSON syntax (Fast path)
+// Use this when you only need: syntax validation
+func Validate(input string) error {
+    // Fast path: Parse and discard (4-5x faster than AST)
+    parser := fastparser.NewParser([]byte(input))
+    _, err := parser.Parse()
+    return err
+}
+
+// ParseReader streams large files (AST path with streaming)
+// Use this when you need: memory-efficient AST construction
+func ParseReader(r io.Reader) (ast.SchemaNode, error) {
+    p := parser.NewParserFromReader(r)
+    return p.Parse()
+}
+```
+
+**Fast Path Implementation** (no AST):
+
+```go
+package fastparser
+
+// Parse directly to validation result (no AST)
+func (p *Parser) Parse() (bool, error) {
+    return p.parseValue()
+}
+
+// Unmarshal directly to Go types (no AST)
+func Unmarshal(data []byte, v interface{}) error {
+    p := NewParser(data)
+    rv := reflect.ValueOf(v)
+    if rv.Kind() != reflect.Ptr {
+        return errors.New("unmarshal target must be pointer")
+    }
+    return p.unmarshalValue(rv.Elem())
+}
+
+func (p *Parser) unmarshalValue(target reflect.Value) error {
+    switch p.peek() {
+    case '{':
+        return p.unmarshalObject(target)  // Direct to struct
+    case '[':
+        return p.unmarshalArray(target)   // Direct to slice
+    case '"':
+        return p.unmarshalString(target)  // Direct to string
+    // ... etc - no AST nodes created
+    }
+}
+```
+
+**AST Path Implementation** (returns universal AST):
+
+```go
+package parser
+
+import "github.com/shapestone/shape-core/pkg/ast"
+
+// Parse returns universal AST
+func (p *Parser) Parse() (ast.SchemaNode, error) {
+    return p.parseValue()
+}
+
+func (p *Parser) parseValue() (ast.SchemaNode, error) {
+    switch p.peek().Kind() {
+    case TokenLBrace:
+        return p.parseObject()  // Returns *ast.ObjectNode
+    case TokenLBracket:
+        return p.parseArray()   // Returns *ast.ObjectNode (numeric keys)
+    case TokenString:
+        return p.parseString()  // Returns *ast.LiteralNode
+    // ... etc - creates AST nodes
+    }
+}
+```
+
+### Automatic Path Selection
+
+Users don't think about paths - they just call the API they need:
+
+```go
+// Fast path (automatic) - validation only
+err := json.Validate(`{"id": "abc"}`)
+
+// Fast path (automatic) - unmarshal to struct
+var user User
+json.Unmarshal([]byte(`{"name":"Alice"}`), &user)
+
+// AST path (automatic) - when you need position info
+node, err := json.Parse(`{"id": "abc"}`)
+// Use node.Position() for error reporting
+
+// AST path (automatic) - when you need queries
+node, _ := json.Parse(data)
+result := jsonpath.Query(node, "$.users[*].email")
+```
+
+### Trade-offs
+
+| Aspect | Fast Path | AST Path |
+|--------|-----------|----------|
+| **Performance** | ✅ 4-10x faster | ❌ Slower (full tree) |
+| **Memory** | ✅ 5-10x less | ❌ Higher (stores nodes) |
+| **Position tracking** | ❌ Not available | ✅ Every node has position |
+| **Queries** | ❌ Not supported | ✅ JSONPath, XPath, etc. |
+| **Transformations** | ❌ Not supported | ✅ Full tree manipulation |
+| **Format conversion** | ❌ Not supported | ✅ JSON ↔ XML ↔ YAML |
+| **Implementation complexity** | ⚠️ Two parsers to maintain | ✅ Single implementation |
+| **Use cases** | 80-90% common operations | 10-20% advanced features |
+
+### Best Practices for Dual-Path
+
+1. **Keep implementations in sync**
+   - Share tokenizer if possible
+   - Run same test suite against both paths (where applicable)
+   - Document which APIs use which path
+
+2. **Design APIs around paths**
+   ```go
+   // GOOD: Clear API separation
+   Parse()      → AST path (returns ast.SchemaNode)
+   Unmarshal()  → Fast path (returns error)
+   Validate()   → Fast path (returns error)
+
+   // BAD: Ambiguous which path is used
+   ParseToStruct()  → Unclear
+   ```
+
+3. **Benchmark to justify complexity**
+   ```bash
+   # Measure before implementing dual-path
+   go test -bench=. -benchmem
+
+   # Ensure 4x+ improvement to justify maintenance burden
+   ```
+
+4. **Document path selection**
+   ```go
+   // Parse parses JSON and returns universal AST.
+   //
+   // Path: AST path (full features)
+   // Use when: Position tracking, queries, transformations needed
+   // Performance: Standard (full AST construction)
+   func Parse(input string) (ast.SchemaNode, error)
+
+   // Unmarshal parses JSON directly to Go struct.
+   //
+   // Path: Fast path (optimized)
+   // Use when: Simple data extraction to Go types
+   // Performance: 4-5x faster than Parse() + conversion
+   func Unmarshal(data []byte, v interface{}) error
+   ```
+
+5. **Consider hybrid approach**
+   - Start with AST-only implementation
+   - Add fast path only for specific hot paths
+   - Measure impact before/after
+
+### Alternative Performance Strategies
+
+If dual-path seems too complex, consider these alternatives:
+
+1. **AST-only with optimizations**
+   - Object pooling for AST nodes
+   - Lazy position tracking (only when errors occur)
+   - Streaming parser for large files
+   - Example: 2-3x improvement with much less complexity
+
+2. **Lazy AST construction**
+   - Parse entire document
+   - Only construct AST nodes when accessed
+   - Use cursor-based API for large documents
+
+3. **Specialized APIs**
+   ```go
+   // Instead of full dual-path:
+   ValidateOnly(input string) error           // Skip AST
+   ParseWithoutPositions(input string) Node   // Faster AST
+   ```
+
+### Measuring Performance
+
+**Benchmark both paths:**
+
+```go
+func BenchmarkValidate_FastPath(b *testing.B) {
+    data := []byte(`{"id":"abc","age":30}`)
+    for i := 0; i < b.N; i++ {
+        fastparser.Validate(data)
+    }
+}
+
+func BenchmarkValidate_ASTPath(b *testing.B) {
+    data := `{"id":"abc","age":30}`
+    for i := 0; i < b.N; i++ {
+        node, _ := parser.Parse(data)
+        _ = node
+    }
+}
+```
+
+**Performance targets:**
+- Fast path should be **4x+ faster** than AST path
+- Memory usage should be **5x+ lower**
+- If gains are smaller, single-path with optimizations may be better
+
+### Documentation Example
+
+See **shape-json** for complete dual-path implementation:
+- Architecture: `shape-json/ARCHITECTURE.md`
+- Benchmarks: `shape-json/pkg/json/parser_bench_test.go`
+- Fast path: `shape-json/internal/fastparser/`
+- AST path: `shape-json/internal/parser/`
+
+### Decision Framework
+
+```
+┌─────────────────────────────────────┐
+│ Is performance critical?            │
+└──────────────┬──────────────────────┘
+               │ Yes
+               v
+┌─────────────────────────────────────┐
+│ Are 80%+ uses validation/unmarshal? │
+└──────────────┬──────────────────────┘
+               │ Yes
+               v
+┌─────────────────────────────────────┐
+│ Can maintain two implementations?   │
+└──────────────┬──────────────────────┘
+               │ Yes
+               v
+┌─────────────────────────────────────┐
+│ Implement dual-path architecture    │
+│ - Fast path for common operations   │
+│ - AST path for advanced features    │
+└─────────────────────────────────────┘
+
+         Any "No" above?
+               │
+               v
+┌─────────────────────────────────────┐
+│ Use AST-only with optimizations:    │
+│ - Object pooling                    │
+│ - Streaming for large files         │
+│ - Lazy position tracking            │
+└─────────────────────────────────────┘
+```
+
+### Summary
+
+- **Dual-path is an advanced optimization** - most parsers don't need it
+- **Start with AST-only** - add fast path only if benchmarks justify complexity
+- **shape-json demonstrates the pattern** - reference it for implementation guidance
+- **Document path selection clearly** - users shouldn't need to understand internals
+- **Measure, measure, measure** - ensure 4x+ gains to justify maintenance burden
 
 ---
 
