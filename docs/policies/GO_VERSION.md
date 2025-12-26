@@ -180,6 +180,5 @@ Update any version references in:
 ## Questions?
 
 For questions about this policy:
-1. Check the [FAQ](../contributor/FAQ.md) (if exists)
-2. Open a discussion in shape-core
-3. Tag issues with `go-version` label
+1. Open a discussion in shape-core
+2. Tag issues with `go-version` label
