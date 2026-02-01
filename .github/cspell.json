@@ -51,7 +51,14 @@
     "Makefile",
     "README",
     "EBNF",
-    "LLM"
+    "LLM",
+    "Godoc",
+    "testdata",
+    "Errorf",
+    "Fatalf",
+    "coverprofile",
+    "customformat",
+    "combinators"
   ],
   "ignoreWords": [],
   "ignorePaths": [
