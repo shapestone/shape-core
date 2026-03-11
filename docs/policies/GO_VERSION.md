@@ -11,7 +11,7 @@ All repositories in the Shape ecosystem use **Go 1.23** as the minimum required 
 - **shape-yaml** - YAML data format parser (planned)
 - **shape-xml** - XML data format parser (planned)
 - **shape-csv** - CSV data format parser (planned)
-- **shape-props** - Java properties format parser (planned)
+- **shape-properties** - Java properties format parser (planned)
 
 ## Rationale
 

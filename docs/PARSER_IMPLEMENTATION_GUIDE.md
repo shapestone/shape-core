@@ -30,7 +30,7 @@
 ┌──────────────────────────────────────────────────────┐
 │  Parser Projects (Separate Repositories)             │
 │  - shape-json, shape-yaml, shape-xml (data formats)  │
-│  - shape-csv, shape-props                            │
+│  - shape-csv, shape-properties                       │
 │                                                      │
 │  Each project:                                       │
 │  - Uses Shape's tokenizer infrastructure             │
