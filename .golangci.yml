@@ -42,12 +42,6 @@ linters:
             - "checkPrivateReceivers"
             - "sayRepetitiveInsteadOfStutters"
 
-    gofmt:
-      simplify: true
-
-    stylecheck:
-      checks: ["all", "-ST1000", "-ST1003"]
-
     gocritic:
       enabled-tags:
         - diagnostic
@@ -70,28 +64,30 @@ linters:
         - wrapperFunc
 
 issues:
-  exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-        - funlen
-
-    # Disable appendCombine for simplicity
-    - linters:
-        - gocritic
-      text: "appendCombine"
-
-    # Disable errcheck for ast_comparator (type assertions are safe)
-    - path: pkg/grammar/ast_comparator\.go
-      linters:
-        - errcheck
-
   max-issues-per-linter: 0
   max-same-issues: 0
 
+  exclusions:
+    rules:
+      # Exclude some linters from running on tests files.
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+          - dupl
+          - gosec
+          - funlen
+
+      # Disable appendCombine for simplicity
+      - linters:
+          - gocritic
+        text: "appendCombine"
+
+      # Disable errcheck for ast_comparator (type assertions are safe)
+      - path: pkg/grammar/ast_comparator\.go
+        linters:
+          - errcheck
+
 output:
-  sort-results: true
+  sort-order:
+    - file
