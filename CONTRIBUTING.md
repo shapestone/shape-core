@@ -95,11 +95,11 @@ tok := tokenizer.NewTokenizer(
 
 ### Prerequisites
 
-**Go Version:** Shape requires **Go 1.23 or later**. See the [Go Version Policy](docs/policies/GO_VERSION.md) for details.
+**Go Version:** Shape requires **Go 1.25 or later**. See the [Go Version Policy](docs/policies/GO_VERSION.md) for details.
 
 ```bash
 # Verify your Go version
-go version  # Should show go1.23.x or later
+go version  # Should show go1.25.x or later
 ```
 
 See [Local Setup Guide](docs/contributor/local-setup.md) for detailed instructions.
@@ -112,13 +112,13 @@ git clone https://github.com/shapestone/shape-core.git
 cd shape
 
 # Run tests
-go test ./...
+make test
 
 # Run linter
-golangci-lint run
+make lint
 
 # Check coverage
-go test -cover ./...
+make coverage
 ```
 
 ## Pull Request Process
@@ -135,8 +135,8 @@ go test -cover ./...
 
 3. **Run tests and linting:**
    ```bash
-   go test ./...
-   golangci-lint run
+   make test
+   make lint
    ```
 
 4. **Commit with clear messages:**
@@ -182,21 +182,22 @@ go test -cover ./...
 
 ```bash
 # All tests
-go test ./...
+make test
 
+# With coverage report
+make coverage
+
+# Benchmarks
+make bench
+```
+
+For lower-level control, the raw commands are:
+```bash
 # Specific package
 go test ./pkg/tokenizer/
 
-# With coverage
-go test -cover ./...
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out
-
 # With verbose output
 go test -v ./...
-
-# Benchmarks
-go test -bench=. ./...
 ```
 
 ### Writing Good Tests

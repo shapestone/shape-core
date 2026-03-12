@@ -12,6 +12,8 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/shapestone/shape-core/badge)](https://securityscorecards.dev/viewer/?uri=github.com/shapestone/shape-core)
 [![Security Policy](https://img.shields.io/badge/Security-Policy-brightgreen)](SECURITY.md)
 
+> Build parsers and custom domain-specific languages (DSLs) in Go using a battle-tested tokenizer, Abstract Syntax Tree (AST), and schema validator toolkit.
+
 **Repository:** github.com/shapestone/shape-core
 
 Shape is a reusable parser infrastructure library that provides:
@@ -26,6 +28,12 @@ Shape is a reusable parser infrastructure library that provides:
 Shape provides the foundational components for parsing structured data and building custom domain-specific languages (DSLs). It's designed to be a generic, reusable infrastructure that other projects build upon.
 
 **Shape is infrastructure only** - actual parser implementations are in separate projects (see [Parser Projects](#parser-projects) below).
+
+## Who It's For
+
+- **Go developers** building custom parsers for configuration files, query languages, or data formats
+- **Teams** who need a production-tested tokenizer without building one from scratch
+- **Open-source projects** that want a lightweight, dependency-free parser infrastructure
 
 ## Features
 
@@ -45,7 +53,7 @@ Shape provides the foundational components for parsing structured data and build
 ### Parser Interface
 - **API patterns:** Recommended patterns for parser implementations (Parse, ParseReader, Format detection, Rendering)
 - **Error types:** Standardized error handling for parsers
-- **Flexibility:** Parser projects choose their parsing technique (LL(1), Pratt, PEG, etc.)
+- **Flexibility:** Parser projects choose their parsing technique (LL(1) recursive descent, Pratt, PEG, etc.)
 
 ### Schema Validator Framework
 - **Type Registry:** Register custom types (UUID, Email, etc.)
@@ -55,7 +63,7 @@ Shape provides the foundational components for parsing structured data and build
 - **Smart Hints:** "Did you mean" suggestions
 
 ### Grammar Verification Framework
-- **EBNF Parser:** Parse custom EBNF variant grammars
+- **Extended Backus-Naur Form (EBNF) Parser:** Parse custom EBNF variant grammars
 - **Test Generation:** Auto-generate verification tests from grammars
 - **Coverage Tracking:** Track grammar rule coverage in tests
 - **Enforced Documentation:** Grammars verify parser correctness in CI
@@ -321,19 +329,48 @@ For parser-specific performance metrics, see individual parser project documenta
 
 ## Development
 
-```bash
-# Run tests
-make test
+All development workflows use `make`. Run `make help` to list all targets.
 
-# Run tests with coverage
-make coverage
+### Testing
 
-# Run linter
-make lint
+| Target | Description |
+|--------|-------------|
+| `make test` | Run all tests with race detection |
+| `make test-short` | Run tests with `-short` flag for quick feedback |
+| `make test-verbose` | Run tests with extra verbosity |
+| `make integration` | Run integration tests only |
+| `make coverage` | Generate test coverage report (`coverage.html`) |
 
-# Run benchmarks
-make bench
-```
+### Performance
+
+| Target | Description |
+|--------|-------------|
+| `make bench` | Run all benchmarks |
+| `make bench-compare` | Compare benchmark results (requires `old.bench` file) |
+
+### Code Quality
+
+| Target | Description |
+|--------|-------------|
+| `make lint` | Run golangci-lint |
+| `make fmt` | Format code with gofmt |
+| `make vet` | Run go vet |
+| `make security-scan` | Run security scanners (gosec) |
+
+### Dependencies
+
+| Target | Description |
+|--------|-------------|
+| `make deps-verify` | Verify and tidy dependencies |
+| `make deps-update` | Update dependencies interactively |
+
+### Build
+
+| Target | Description |
+|--------|-------------|
+| `make build` | Build all packages |
+| `make clean` | Remove build artifacts and coverage files |
+| `make help` | Show all available targets |
 
 ## Requirements
 
