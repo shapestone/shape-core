@@ -1,7 +1,10 @@
+version: "2"
+
 run:
   timeout: 5m
 
 linters:
+  default: none
   enable:
     - errcheck
     - gosimple
@@ -20,52 +23,51 @@ linters:
     - gosec
     - prealloc
 
-linters-settings:
-  errcheck:
-    check-blank: true
-    check-type-assertions: true
+  settings:
+    errcheck:
+      check-blank: true
+      check-type-assertions: true
 
-  govet:
-    enable-all: true
-    disable:
-      - shadow
-      - fieldalignment
+    govet:
+      disable:
+        - shadow
+        - fieldalignment
 
-  revive:
-    rules:
-      - name: exported
-        severity: warning
-        disabled: false
-        arguments:
-          - "checkPrivateReceivers"
-          - "sayRepetitiveInsteadOfStutters"
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+          disabled: false
+          arguments:
+            - "checkPrivateReceivers"
+            - "sayRepetitiveInsteadOfStutters"
 
-  gofmt:
-    simplify: true
+    gofmt:
+      simplify: true
 
-  stylecheck:
-    checks: ["all", "-ST1000", "-ST1003"]
+    stylecheck:
+      checks: ["all", "-ST1000", "-ST1003"]
 
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - whyNoLint
-      - unnamedResult
-      - hugeParam
-      - rangeValCopy
-      - emptyStringTest
-      - paramTypeCombine
-      - elseif
-      - ifElseChain
-      - sprintfQuotedString
-      - builtinShadow
-      - builtinShadowDecl
-      - wrapperFunc
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - whyNoLint
+        - unnamedResult
+        - hugeParam
+        - rangeValCopy
+        - emptyStringTest
+        - paramTypeCombine
+        - elseif
+        - ifElseChain
+        - sprintfQuotedString
+        - builtinShadow
+        - builtinShadowDecl
+        - wrapperFunc
 
 issues:
   exclude-rules:
