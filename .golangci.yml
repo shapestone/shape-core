@@ -67,27 +67,23 @@ issues:
   max-issues-per-linter: 0
   max-same-issues: 0
 
-  exclusions:
-    rules:
-      # Exclude some linters from running on tests files.
-      - path: _test\.go
-        linters:
-          - gocyclo
-          - errcheck
-          - dupl
-          - gosec
-          - funlen
+exclusions:
+  rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - funlen
 
-      # Disable appendCombine for simplicity
-      - linters:
-          - gocritic
-        text: "appendCombine"
+    # Disable appendCombine for simplicity
+    - linters:
+        - gocritic
+      text: "appendCombine"
 
-      # Disable errcheck for ast_comparator (type assertions are safe)
-      - path: pkg/grammar/ast_comparator\.go
-        linters:
-          - errcheck
-
-output:
-  sort-order:
-    - file
+    # Disable errcheck for ast_comparator (type assertions are safe)
+    - path: pkg/grammar/ast_comparator\.go
+      linters:
+        - errcheck
