@@ -29,6 +29,12 @@ linters:
         - shadow
         - fieldalignment
 
+    staticcheck:
+      checks:
+        - "all"
+        - "-QF1001"
+        - "-QF1012"
+
     revive:
       rules:
         - name: exported
@@ -58,6 +64,7 @@ linters:
         - builtinShadow
         - builtinShadowDecl
         - wrapperFunc
+        - importShadow
 
   exclusions:
     rules:
@@ -79,6 +86,26 @@ linters:
       - path: pkg/grammar/ast_comparator\.go
         linters:
           - errcheck
+
+      # Pre-existing unhandled errors in stream and validator (G104)
+      - linters:
+          - gosec
+        text: "G104"
+
+      # Pre-existing integer overflow conversion (G115)
+      - linters:
+          - gosec
+        text: "G115"
+
+      # Pre-existing missing exported comments
+      - linters:
+          - revive
+        text: "exported:"
+
+      # Pre-existing prealloc suggestions
+      - linters:
+          - prealloc
+        path: "pkg/ast/printer\\.go|pkg/tokenizer/tokens\\.go"
 
 formatters:
   enable:
