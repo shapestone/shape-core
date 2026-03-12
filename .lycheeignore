@@ -1,0 +1,2 @@
+# Exclude URLs that are flaky or known to have connectivity issues from CI
+https://www.conventionalcommits.org
