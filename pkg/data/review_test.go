@@ -242,13 +242,12 @@ func TestBigDigitCap(t *testing.T) {
 		{"custom cap ok", "12345", 5, nil},
 		{"custom cap over", "123456", 5, ErrNumberRange},
 		{"million digits fast fail", strings.Repeat("9", 1_000_000), DefaultMaxBigDigits, ErrNumberRange},
-		{"refused by math/big is range", "0." + strings.Repeat("9", 1_000_000) + "e-65536", 2_000_000, ErrNumberRange}, // slow: skipped in -short
+		{"leading zeros are free", "0." + strings.Repeat("0", 4100) + "1", DefaultMaxBigDigits, nil},
+		{"many leading zeros still bounded", "0." + strings.Repeat("0", 1_000_000) + "1", DefaultMaxBigDigits, ErrNumberRange},
+		{"effective exponent bounded", "0." + strings.Repeat("9", 1_000_000) + "e-65536", 2_000_000, ErrNumberRange},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if testing.Short() && len(tt.text) > 100_000 && tt.max > DefaultMaxBigDigits {
-				t.Skip("quadratic math/big parse")
-			}
 			_, err := Number{Text: tt.text}.BigWithMaxDigits(tt.max)
 			if tt.err == nil && err != nil || tt.err != nil && !errors.Is(err, tt.err) {
 				t.Errorf("err = %v, want %v", err, tt.err)
@@ -359,5 +358,45 @@ func TestZeroNumber(t *testing.T) {
 	}
 	if StringValue("x").Number().Valid() {
 		t.Error("non-numeric Value.Number() must be invalid")
+	}
+}
+
+func TestFailedTextChargeIsNotApplied(t *testing.T) {
+	g := NewGuard(Limits{MaxMemory: 100})
+	if err := g.String(90); !errors.Is(err, ErrLimit) {
+		t.Fatalf("err = %v", err)
+	}
+	if g.MemoryUsed() != 0 {
+		t.Errorf("MemoryUsed = %d after failed String", g.MemoryUsed())
+	}
+	if err := g.Key(40); !errors.Is(err, ErrLimit) || g.MemoryUsed() != 0 {
+		t.Errorf("Key: err=%v used=%d", err, g.MemoryUsed())
+	}
+	if err := g.String(100 - EstStringHeaderBytes); err != nil || g.MemoryUsed() != 100 {
+		t.Errorf("exact fit: err=%v used=%d", err, g.MemoryUsed())
+	}
+	u := NewGuard(Limits{MaxStringBytes: NoLimit})
+	if err := u.String(math.MaxInt); err != nil {
+		t.Errorf("unlimited string and memory: %v", err)
+	}
+}
+
+func TestNewMapTrusted(t *testing.T) {
+	if got := cap(NewMapTrusted(5000).entries); got != 5000 {
+		t.Errorf("cap = %d", got)
+	}
+	if got := cap(NewMapTrusted(-3).entries); got != 0 {
+		t.Errorf("cap = %d", got)
+	}
+	if got := cap(NewMap(5000).entries); got != maxPrealloc {
+		t.Errorf("NewMap cap = %d", got)
+	}
+}
+
+func TestEqualMapsLengthMismatch(t *testing.T) {
+	a, b := NewMap(0), NewMap(0)
+	a.Append("k", NullValue())
+	if MapValue(a).Equal(MapValue(b)) || MapValue(b).Equal(MapValue(a)) {
+		t.Error("maps of different length are equal")
 	}
 }

@@ -125,7 +125,8 @@ func (n Number) BigWithMaxDigits(maxDigits int) (*big.Rat, error) {
 	if !n.Valid() {
 		return nil, numErr(ErrNumberSyntax, n.Text)
 	}
-	if mantissaDigits(n.Text) > maxDigits {
+	sig, eff := bigShape(n.Text)
+	if sig > maxDigits || eff > maxBigExponent+DefaultMaxBigDigits || eff < -(maxBigExponent+DefaultMaxBigDigits) {
 		return nil, numErr(ErrNumberRange, n.Text)
 	}
 	if exp := exponent(n.Text); exp > maxBigExponent || exp < -maxBigExponent {
@@ -153,7 +154,7 @@ func (n Number) BigIntWithMaxDigits(maxDigits int) (*big.Int, error) {
 	if !n.IsInteger() {
 		return nil, numErr(ErrNotInteger, n.Text)
 	}
-	if mantissaDigits(n.Text) > maxDigits {
+	if sig, _ := bigShape(n.Text); sig > maxDigits {
 		return nil, numErr(ErrNumberRange, n.Text)
 	}
 	v, ok := new(big.Int).SetString(n.Text, 10)
@@ -176,19 +177,29 @@ func numErr(sentinel error, text string) error {
 	return fmt.Errorf("%w: %q", sentinel, text)
 }
 
-// mantissaDigits counts the digits before any exponent.
-func mantissaDigits(s string) int {
-	d := 0
+// bigShape returns the number of significant mantissa digits (leading zeros
+// are free) and the effective base-10 exponent: the written exponent minus
+// the number of fraction digits. Together they bound the cost of math/big.
+func bigShape(s string) (sig, eff int) {
+	frac, seen, inFrac := 0, false, false
 	for i := 0; i < len(s); i++ {
 		c := s[i]
-		if c == 'e' || c == 'E' {
-			break
-		}
-		if c >= '0' && c <= '9' {
-			d++
+		switch {
+		case c == 'e' || c == 'E':
+			return sig, exponent(s) - frac
+		case c == '.':
+			inFrac = true
+		case c >= '0' && c <= '9':
+			if inFrac {
+				frac++
+			}
+			if c != '0' || seen {
+				seen = true
+				sig++
+			}
 		}
 	}
-	return d
+	return sig, -frac
 }
 
 // exponent returns the exponent of valid number text, clamped to ±MaxInt32

@@ -123,6 +123,9 @@ func (v Value) Map() *Map { return v.m }
 
 // Equal reports whether two values have the same kind and content. Numbers
 // compare by exact text, so 1 and 1.0 differ. Maps compare entries in order.
+// Equal recurses once per nesting level, so use it on values built by a
+// parser (bounded by Limits.MaxDepth) or otherwise known to be shallow; a
+// value nested tens of millions deep would overflow the stack.
 func (v Value) Equal(o Value) bool {
 	if v.kind != o.kind {
 		return false
@@ -135,16 +138,26 @@ func (v Value) Equal(o Value) bool {
 	case KindList:
 		return slices.EqualFunc(v.list, o.list, Value.Equal)
 	case KindMap:
-		return slices.EqualFunc(v.m.Entries(), o.m.Entries(), func(a, b Entry) bool {
-			return a.Key == b.Key && a.Value.Equal(b.Value)
-		})
+		if v.m.Len() != o.m.Len() {
+			return false
+		}
+		for i := 0; i < v.m.Len(); i++ {
+			a, b := v.m.At(i), o.m.At(i)
+			if a.Key != b.Key || !a.Value.Equal(b.Value) {
+				return false
+			}
+		}
+		return true
 	}
 	return v.text == o.text // string and numbers
 }
 
 // String returns a compact JSON-like rendering for debugging and test
 // failures. It is not a serializer: use the format packages to write data.
-// Use Str for the content of a string value.
+// Unlike Number.String (raw text) and Kind.String (a name), strings render
+// quoted and escaped, so use Str for the content of a string value. Like
+// Equal, String recurses once per nesting level and is meant for values of
+// bounded depth.
 func (v Value) String() string {
 	var sb strings.Builder
 	v.debug(&sb)

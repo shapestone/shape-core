@@ -223,10 +223,15 @@ func (g *Guard) text(n int, extra int64) error {
 	if int64(n) > g.maxString {
 		return exceeded(LimitStringBytes, g.maxString, int64(n))
 	}
-	if err := charge(&g.mem, int64(n), g.maxMem, LimitMemory); err != nil {
-		return err
+	// n <= maxString <= MaxInt64 and the constants are tiny, but n can be
+	// near MaxInt64 when strings are unlimited: charge saturates, so add
+	// the parts in one call only when the sum cannot overflow.
+	cost := int64(n)
+	if cost > math.MaxInt64-(EstStringHeaderBytes+EstMapEntryBytes) {
+		cost = math.MaxInt64 - (EstStringHeaderBytes + EstMapEntryBytes)
 	}
-	if err := charge(&g.mem, EstStringHeaderBytes+extra, g.maxMem, LimitMemory); err != nil {
+	cost += EstStringHeaderBytes + extra
+	if err := charge(&g.mem, cost, g.maxMem, LimitMemory); err != nil {
 		return err
 	}
 	return g.tick()

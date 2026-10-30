@@ -12,7 +12,10 @@ var ErrSyntax = errors.New("syntax error")
 var ErrLimit = errors.New("limit exceeded")
 
 // ErrNegativeAmount is returned by Guard methods given a negative size or
-// count. It signals a bug in the caller's arithmetic, not a limit breach.
+// count. It signals a bug in the caller's arithmetic, not a limit breach, so
+// errors.Is(err, ErrLimit) is false for it. Parsers and their callers should
+// treat it as an internal error and not report it to a client as a limit
+// breach.
 var ErrNegativeAmount = errors.New("negative amount")
 
 // Names of the limits reported in LimitError.Limit.

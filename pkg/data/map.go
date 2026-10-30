@@ -35,11 +35,20 @@ type Map struct {
 }
 
 // NewMap returns an empty map with room for capacity entries. Negative
-// capacity is treated as 0, and the reservation is capped at 1024 entries;
-// the map still grows as needed. The reservation is not charged to a Guard.
+// capacity is treated as 0, and the reservation is silently capped at 1024
+// entries because the size may come from untrusted input; the map still
+// grows as needed. Use NewMapTrusted when the size is known to be sound.
+// The reservation is not charged to a Guard.
 func NewMap(capacity int) *Map {
-	capacity = max(0, min(capacity, maxPrealloc))
-	return &Map{entries: make([]Entry, 0, capacity)}
+	return NewMapTrusted(min(capacity, maxPrealloc))
+}
+
+// NewMapTrusted is NewMap without the 1024-entry cap, for builders that know
+// the real size (for example from an already-parsed row count). Negative
+// capacity is treated as 0. Never pass a size read from untrusted input
+// without checking it against a Guard first.
+func NewMapTrusted(capacity int) *Map {
+	return &Map{entries: make([]Entry, 0, max(0, capacity))}
 }
 
 // Len returns the number of entries, counting appended duplicates.
@@ -51,8 +60,8 @@ func (m *Map) Len() int {
 }
 
 // Entries returns a copy of the entries in order. Because it is a copy,
-// changing it cannot corrupt the key index; use At or All to read without
-// copying.
+// changing it cannot corrupt the key index, but every call allocates: do not
+// call it inside a loop. Use Len with At, or All, to read without copying.
 func (m *Map) Entries() []Entry {
 	if m == nil {
 		return nil
