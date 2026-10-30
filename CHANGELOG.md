@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `pkg/data`: shared value model for format parsers: `Kind`, `Value`, `List` and an insertion-ordered `Map` with primitives for per-format duplicate-key policy (#10)
+- `pkg/data`: `Number` keeps the exact source text, validates the JSON number grammar, and offers `Int64` (errors on overflow), `Float64` and `Big` (#10)
+- `pkg/data`: `Limits` with secure defaults (depth 10,000 and YAML alias expansion on, all other limits opt-in, `NoLimit` to disable) (#11)
+- `pkg/data`: `Guard` enforcing depth, nodes, bytes, string/key size, keys per map, alias expansion, estimated memory and context cancellation (#12)
+- `pkg/data`: typed errors `SyntaxError` and `LimitError` with `ErrSyntax` and `ErrLimit` sentinels; context errors pass through unwrapped (#13)
 - Documentation: renamed `shape-props` references to `shape-properties`
 
 ### Changed
