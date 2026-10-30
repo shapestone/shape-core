@@ -107,7 +107,11 @@ func WithoutKnownFor(p Profile, names ...string) Option {
 
 // Adopted declares that the format now enforces the named limits
 // (data.LimitDepth and friends). The Known entry of any case that expects
-// only a limit error drops once every limit name it allows is adopted.
+// only a limit error drops as soon as any limit name the case allows is
+// adopted: a case that allows several names (for example nodes, keys-per-map
+// or memory) accepts whichever limit fires first, so one adopted limit can
+// satisfy it. A format that has adopted only some of those limits and still
+// fails such a case should use WithoutKnownFor to opt in case by case.
 func Adopted(limits ...string) Option {
 	return func(c *config) {
 		for _, l := range limits {
@@ -173,12 +177,10 @@ func (cfg *config) known(c Case, p Profile, want Expect) string {
 		return ""
 	}
 	if want.Outcome == Limit && len(want.Limits) > 0 {
-		all := true
 		for _, l := range want.Limits {
-			all = all && cfg.adopted[l]
-		}
-		if all {
-			return ""
+			if cfg.adopted[l] {
+				return ""
+			}
 		}
 	}
 	return reason
@@ -256,12 +258,17 @@ func kindOf(err error) failKind {
 }
 
 // excusable reports whether a Known entry may absorb err: the format gave the
-// wrong verdict, ran out of resources, or crashed. A panic, a hang or a wrong
-// value is a different bug and still fails.
-func excusable(err error) bool {
+// wrong verdict, ran out of resources, or crashed. A panic or a wrong value is
+// a different bug and still fails. So does a hang, except for an isolated
+// case: those are the inputs that take an unguarded parser minutes or
+// gigabytes today (an alias bomb), so running out of time is how the known gap
+// shows.
+func excusable(c Case, err error) bool {
 	switch kindOf(err) {
 	case kVerdict, kResource, kCrash:
 		return true
+	case kHang:
+		return c.Isolated()
 	}
 	return false
 }
@@ -307,7 +314,7 @@ func execute(r reporter, path []string, c Case, p Profile, want Expect, cfg *con
 	}
 
 	switch {
-	case known != "" && err != nil && excusable(err):
+	case known != "" && err != nil && excusable(c, err):
 		r.Skipf("known gap: %s: %v", known, err)
 	case known != "" && err != nil:
 		r.Errorf("known gap (%s) hit a different failure: %v", known, err)

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -30,6 +31,47 @@ func TestJSONCorpus(t *testing.T) {
 	// The reference parser is the first adopter: nothing is a known gap.
 	opts = append(opts, hostiletest.Strict())
 	hostiletest.Run(t, hostiletest.JSON, parseJSON, opts...)
+}
+
+// TestLiveHeapWithinGuardEstimate is the check the harness makes under Wire,
+// run near the budget: a parse that uses most of a 64 MiB MaxMemory must keep
+// no more live heap, after a collection, than the Guard estimated. The harness
+// check itself only runs on small results under Tight, far from its budget.
+func TestLiveHeapWithinGuardEstimate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("builds a 1.4 MB document and a 40 MB result")
+	}
+	const n = 700_000
+	in := make([]byte, 0, 2*n+2)
+	in = append(in, '[')
+	for i := 0; i < n; i++ {
+		in = append(in, '0', ',')
+	}
+	in = append(in, '0', ']')
+
+	req := hostiletest.RequestFor(hostiletest.Default)
+	req.Limits.MaxMemory = 64 << 20
+
+	var before, after runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&before)
+	v, g, err := parseJSONGuard(in, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtime.GC()
+	runtime.ReadMemStats(&after)
+	runtime.KeepAlive(v)
+
+	est := g.MemoryUsed()
+	live := int64(after.HeapAlloc) - int64(before.HeapAlloc)
+	t.Logf("estimate %d MiB, live heap %d MiB, budget %d MiB", est>>20, live>>20, req.Limits.MaxMemory>>20)
+	if est < req.Limits.MaxMemory*3/4 {
+		t.Fatalf("estimate %d MiB is not near the %d MiB budget; the test no longer exercises it", est>>20, req.Limits.MaxMemory>>20)
+	}
+	if live > est {
+		t.Errorf("result holds %d MiB of live heap, over the Guard estimate of %d MiB", live>>20, est>>20)
+	}
 }
 
 func TestRequestFor(t *testing.T) {

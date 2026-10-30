@@ -173,20 +173,22 @@ func TestExecuteKnownGaps(t *testing.T) {
 			t.Errorf("wire must be strict: skips=%q errs=%q", r.skips, r.errs)
 		}
 	})
-	t.Run("Adopted needs every allowed limit", func(t *testing.T) {
+	t.Run("Adopted drops a case when any allowed limit is adopted", func(t *testing.T) {
 		multi := testCase(limit(data.LimitNodes, data.LimitMemory))
 		multi.Known = map[Profile]string{Default: "not adopted"}
 		w := multi.Want[Default]
 
 		r := &recorder{}
-		execute(r, path, multi, Default, w, newTestConfig(Adopted(data.LimitNodes)), fixed(data.NullValue(), nil))
-		if len(r.skips) != 1 {
-			t.Errorf("one of two adopted must stay known: skips=%q errs=%q", r.skips, r.errs)
+		execute(r, path, multi, Default, w, newTestConfig(Adopted(data.LimitDepth)), fixed(data.NullValue(), nil))
+		if len(r.skips) != 1 || len(r.errs) != 0 {
+			t.Errorf("an unrelated adopted limit must leave it known: skips=%q errs=%q", r.skips, r.errs)
 		}
-		r = &recorder{}
-		execute(r, path, multi, Default, w, newTestConfig(Adopted(data.LimitNodes, data.LimitMemory)), fixed(data.NullValue(), nil))
-		if len(r.errs) != 1 || len(r.skips) != 0 {
-			t.Errorf("both adopted must be strict: skips=%q errs=%q", r.skips, r.errs)
+		for _, name := range []string{data.LimitNodes, data.LimitMemory} {
+			r = &recorder{}
+			execute(r, path, multi, Default, w, newTestConfig(Adopted(name)), fixed(data.NullValue(), nil))
+			if len(r.errs) != 1 || len(r.skips) != 0 {
+				t.Errorf("adopting %s must make it strict: skips=%q errs=%q", name, r.skips, r.errs)
+			}
 		}
 	})
 	t.Run("SkipHeavyKnown does not run heavy known cases", func(t *testing.T) {
@@ -242,6 +244,52 @@ func TestExecutePanicIsCaught(t *testing.T) {
 	execute(r, []string{"T"}, testCase(valid), Default, valid, newTestConfig(), boom)
 	if len(r.errs) != 1 || !strings.Contains(r.errs[0], "panicked") || !strings.Contains(r.errs[0], "index out of range") {
 		t.Errorf("errs=%q", r.errs)
+	}
+}
+
+func TestExcusable(t *testing.T) {
+	plain := testCase(valid)
+	isolated := testCase(valid)
+	isolated.Tags = []string{TagCrash}
+	tests := []struct {
+		kind            failKind
+		plain, isolated bool
+	}{
+		{kVerdict, true, true},
+		{kResource, true, true},
+		{kCrash, true, true},
+		{kHang, false, true},
+		{kPanic, false, false},
+		{kCheck, false, false},
+		{kDiff, false, false},
+	}
+	for _, tt := range tests {
+		err := fail(tt.kind, "x")
+		if got := excusable(plain, err); got != tt.plain {
+			t.Errorf("excusable(plain, %s) = %v, want %v", tt.kind, got, tt.plain)
+		}
+		if got := excusable(isolated, err); got != tt.isolated {
+			t.Errorf("excusable(isolated, %s) = %v, want %v", tt.kind, got, tt.isolated)
+		}
+	}
+	if excusable(isolated, errors.New("plain error")) {
+		t.Error("an error that is not a failure must not be excused")
+	}
+}
+
+func TestExecuteKnownHangIsNotExcused(t *testing.T) {
+	shortTimes(t)
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	c := testCase(valid)
+	c.Known = map[Profile]string{Default: "slow today"}
+	r := &recorder{}
+	execute(r, []string{"T"}, c, Default, valid, newTestConfig(), func([]byte, Request) (data.Value, error) {
+		<-release
+		return data.NullValue(), nil
+	})
+	if len(r.skips) != 0 || len(r.errs) != 1 || !strings.Contains(r.errs[0], "different failure") {
+		t.Errorf("a hang on a non-isolated known case must fail: skips=%q errs=%q", r.skips, r.errs)
 	}
 }
 

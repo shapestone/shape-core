@@ -56,10 +56,11 @@
 //
 // A case that is expected to fail today carries a Known reason per profile.
 // While it fails with the wrong verdict, runs out of resources or crashes,
-// Run reports it as skipped. A panic, a hang or a wrong value is a different
-// bug and fails. Once the case passes, Run fails it, so a stale entry is
+// Run reports it as skipped; so does a hang of an isolated case. A panic, a
+// hang of any other case, or a wrong value is a different bug and fails. Once the case passes, Run fails it, so a stale entry is
 // noticed. A format drops entries as it adopts pkg/data: [Adopted] drops
-// those for limits it now enforces, [WithoutKnownFor] drops named cases for
+// those for limits it now enforces (a case that allows several limit names is
+// dropped as soon as any one of them is adopted), [WithoutKnownFor] drops named cases for
 // one profile, [WithoutKnown] for all, and [Strict] drops every one.
 //
 // # Crashes, memory and CI
@@ -86,5 +87,11 @@
 //   - HOSTILETEST_STRICT=1 ignores every Known entry.
 //   - HOSTILETEST_SKIPKNOWN=1 does not run Known cases that are heavy or
 //     isolated, for runners where even a contained 3 GiB parse is too much.
-//   - HOSTILETEST_MAXSIZE=<bytes> skips cases with larger inputs.
+//     [SkipHeavyKnown] is the same switch as an option.
+//   - HOSTILETEST_MAXSIZE=<bytes> skips cases with larger inputs; [MaxSize]
+//     is the option.
+//   - HOSTILETEST_HEAVY=1 is read only by this package's own tests. Without
+//     it they skip JSON cases over 8 MiB, because the 64 MiB cases allocate
+//     close to 1 GiB, which does not fit under the race detector on a small
+//     runner. Format modules choose their own cap with [MaxSize].
 package hostiletest

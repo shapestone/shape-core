@@ -62,9 +62,10 @@ type Limits struct {
 	MaxAliasExpansion int64
 
 	// MaxMemory is the budget for the estimated memory of the result, in
-	// bytes. The estimate is a heuristic that ignores slice-growth slack and
-	// Go map overhead; it can under-count the real heap by 10-30%, so leave
-	// headroom when sizing it against a hard memory limit. See Guard.
+	// bytes. The estimate of the finished result is approximate: it uses
+	// fixed per-node and per-string constants (a small integer is charged
+	// 81 bytes where the result really holds about 56) and ignores Go map
+	// overhead. The estimate is not the main risk; the peak is. See Guard.
 	//
 	// The peak heap during a parse can reach about 2.5 times MaxMemory: an
 	// append that grows a list keeps the old and the new slice alive

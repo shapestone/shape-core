@@ -38,15 +38,23 @@ type jsonParser struct {
 }
 
 func parseJSON(in []byte, req hostiletest.Request) (data.Value, error) {
+	v, _, err := parseJSONGuard(in, req)
+	return v, err
+}
+
+// parseJSONGuard is parseJSON that also returns the guard, so a test can read
+// its memory estimate.
+func parseJSONGuard(in []byte, req hostiletest.Request) (data.Value, *data.Guard, error) {
 	g := data.NewGuard(req.Limits)
 	if err := g.Check(); err != nil {
-		return data.Value{}, err
+		return data.Value{}, g, err
 	}
 	if err := g.Bytes(len(in)); err != nil {
-		return data.Value{}, err
+		return data.Value{}, g, err
 	}
 	jp := &jsonParser{in: in, g: g, rejectD: req.Policy.RejectDuplicateKeys}
-	return jp.run()
+	v, err := jp.run()
+	return v, g, err
 }
 
 func (p *jsonParser) fail(msg string) error {
