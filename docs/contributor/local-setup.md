@@ -38,7 +38,7 @@ go version
 
 ### 3. Install Dependencies
 
-Shape has minimal dependencies (only `google/uuid` for production code):
+Shape has no third-party runtime dependencies (standard library only):
 
 ```bash
 # Download dependencies

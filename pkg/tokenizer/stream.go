@@ -3,9 +3,12 @@ package tokenizer
 import (
 	"io"
 	"unicode/utf8"
-
-	"github.com/google/uuid"
 )
+
+// streamID is an identity token: each stream created by a constructor gets its own
+// pointer, and clones copy it. The field is non-zero-size so that distinct
+// allocations are guaranteed distinct addresses.
+type streamID struct{ _ byte }
 
 //
 // Stream - Stream abstraction with UTF-8 support and position tracking
@@ -87,7 +90,7 @@ func NewStream(str string) Stream {
 	}
 
 	return &streamImpl{
-		uuid:          uuid.New(),
+		id:            &streamID{},
 		bytes:         bytes,
 		data:          runes,
 		length:        len(runes),
@@ -112,7 +115,7 @@ func NewStream(str string) Stream {
 //   - runeToBytePos: Maps rune index to byte position for synchronization
 //   - isASCIIOnly: True if all content is ASCII (len(runes) == len(bytes))
 type streamImpl struct {
-	uuid          uuid.UUID
+	id            *streamID
 	bytes         []byte // Original byte data
 	data          []rune // Decoded rune data
 	length        int    // Number of runes
@@ -133,7 +136,7 @@ type Location struct {
 // Clone creates a copy of the stream for backtracking support.
 func (s *streamImpl) Clone() Stream {
 	return &streamImpl{
-		uuid:          s.uuid,
+		id:            s.id,
 		bytes:         s.bytes,
 		data:          s.data,
 		length:        s.length,
@@ -152,7 +155,7 @@ func (s *streamImpl) Match(other Stream) {
 	if !ok {
 		panic("type assertion failed: expected *streamImpl")
 	}
-	if s.uuid != otherImpl.uuid {
+	if s.id != otherImpl.id {
 		panic("trying to match two different streams")
 	}
 	s.location = otherImpl.location
@@ -453,7 +456,7 @@ func NewStreamFromReader(reader io.Reader) Stream {
 	}
 
 	s := &bufferedStreamImpl{
-		uuid:    uuid.New(),
+		id:      &streamID{},
 		reader:  reader,
 		shared:  shared,
 		readBuf: make([]byte, readChunkSize),
@@ -476,7 +479,7 @@ func NewStreamFromReader(reader io.Reader) Stream {
 // The stream uses a shared buffer that is referenced by all clones. This ensures
 // that buffer modifications (refilling, discarding) are visible to all instances.
 type bufferedStreamImpl struct {
-	uuid     uuid.UUID
+	id       *streamID
 	reader   io.Reader
 	shared   *sharedBuffer // Shared buffer state (pointer ensures all clones see updates)
 	readBuf  []byte        // Temporary buffer for reading bytes (not shared)
@@ -559,7 +562,7 @@ func (s *bufferedStreamImpl) ensureBufferHasData() {
 // This ensures that buffer modifications by either the clone or original are visible to both.
 func (s *bufferedStreamImpl) Clone() Stream {
 	return &bufferedStreamImpl{
-		uuid:     s.uuid,
+		id:       s.id,
 		reader:   s.reader,
 		shared:   s.shared,                    // Share the pointer to buffer state
 		readBuf:  make([]byte, readChunkSize), // Each clone needs its own read buffer
@@ -575,7 +578,7 @@ func (s *bufferedStreamImpl) Match(other Stream) {
 	if !ok {
 		panic("type assertion failed: expected *bufferedStreamImpl")
 	}
-	if s.uuid != otherImpl.uuid {
+	if s.id != otherImpl.id {
 		panic("trying to match two different streams")
 	}
 

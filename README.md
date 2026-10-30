@@ -375,7 +375,7 @@ All development workflows use `make`. Run `make help` to list all targets.
 ## Requirements
 
 - Go 1.25 or later
-- Minimal external dependencies (only `github.com/google/uuid` for validation framework)
+- No external runtime dependencies (standard library only)
 
 ## License
 

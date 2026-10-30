@@ -17,11 +17,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation: renamed `shape-props` references to `shape-properties`
 
 ### Changed
+- `pkg/tokenizer`: stream identity check in `Match` now uses a stdlib pointer token instead of `github.com/google/uuid`; behaviour, including the "trying to match two different streams" panic, is unchanged (#14)
 - `pkg/data`: `Limits` integer fields are all `int64`; `Guard` counters saturate and reject negative amounts instead of wrapping or crediting the budget; `Enter` leaves the depth unchanged on a context error; `MapSize` and `Memory` poll the context; `Map` read methods are nil-safe, `Map.Entries` returns a copy and `NewMap` clamps and caps its capacity; `Number.Big`/`BigInt` cap mantissa digits at 4096 and report size refusals as `ErrNumberRange`; number errors quote at most 32 bytes; `Guard.String`/`Key` charge memory atomically; `Big` ignores leading zeros when counting digits but bounds the effective exponent; `Value.Equal` no longer copies map entries
 - CI: migrated `.golangci.yml` to golangci-lint v2 format
 - CI: upgraded `golangci-lint-action` to v9 for Go 1.25 support
 - CI: updated Go version to 1.25 in test and lint jobs
 - CI: allowed `golangci-lint-action@v9` in dependency review (license not yet indexed)
+
+### Removed
+- Dependency on `github.com/google/uuid`; the module is now standard-library only at runtime (#14)
 
 ### Fixed
 - Removed local `replace` directive in `custom-dsl` example, pinned to v0.9.3
