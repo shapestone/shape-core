@@ -65,6 +65,12 @@ type Limits struct {
 	// bytes. The estimate is a heuristic that ignores slice-growth slack and
 	// Go map overhead; it can under-count the real heap by 10-30%, so leave
 	// headroom when sizing it against a hard memory limit. See Guard.
+	//
+	// The peak heap during a parse can reach about 2.5 times MaxMemory: an
+	// append that grows a list keeps the old and the new slice alive
+	// together, and the garbage left behind is not collected at once. A
+	// client with a hard memory ceiling should therefore set MaxMemory to at
+	// most a third of it.
 	MaxMemory int64
 
 	// Context, when non-nil, cancels the parse. The guard polls it

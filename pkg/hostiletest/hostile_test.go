@@ -32,6 +32,22 @@ func TestJSONCorpus(t *testing.T) {
 	hostiletest.Run(t, hostiletest.JSON, parseJSON, opts...)
 }
 
+func TestRequestFor(t *testing.T) {
+	w := hostiletest.RequestFor(hostiletest.Wire)
+	if w.Profile != hostiletest.Wire || w.Limits != hostiletest.Limits(hostiletest.Wire) || !w.Policy.RejectDuplicateKeys {
+		t.Errorf("wire request = %+v", w)
+	}
+	for _, p := range []hostiletest.Profile{hostiletest.Default, hostiletest.Tight, "some-future-profile"} {
+		if hostiletest.RequestFor(p).Policy.RejectDuplicateKeys {
+			t.Errorf("%s must not reject duplicate keys", p)
+		}
+	}
+	// Profile is an open set: an unknown one gets the defaults.
+	if hostiletest.Limits("some-future-profile") != (data.Limits{}) {
+		t.Error("unknown profile must get data.Limits{}")
+	}
+}
+
 func TestCorpusIntegrity(t *testing.T) {
 	seen := map[string]bool{}
 	for _, c := range hostiletest.All() {
@@ -211,8 +227,11 @@ func TestNumberGrammarAgainstStrconv(t *testing.T) {
 }
 
 // TestRuntimeDoesNotImportHarness: pkg/hostiletest is test support. No other
-// non-test package in the module may import it, and it must not import
-// encoding/json or encoding/xml.
+// non-test package in the module may import it, and the package itself must
+// not import encoding/json or encoding/xml. The check is scoped to this
+// package: other packages of the module (validator, ast) import
+// encoding/json for their own reasons, and the format modules enforce the
+// stdlib-only rule in their own repositories.
 func TestRuntimeDoesNotImportHarness(t *testing.T) {
 	const self = "github.com/shapestone/shape-core/pkg/hostiletest"
 	root := filepath.Join("..", "..")

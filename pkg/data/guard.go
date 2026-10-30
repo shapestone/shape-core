@@ -40,6 +40,13 @@ const pollMask = 255
 // EstMapEntryBytes. Parsers that allocate more can add to the budget with
 // Memory.
 //
+// Peak memory: the estimate counts what the finished result holds, not what
+// the parse touches along the way. While a list grows by append, the old and
+// the new slice exist together, and the garbage left behind is not collected
+// at once, so the peak heap can reach about 2.5 times MaxMemory (measured on a
+// Guard-limited parse of small integers). A client with a hard memory ceiling
+// should set MaxMemory to at most a third of it.
+//
 // Context polling: Enter, Node, Bytes, String, Key, CheckStringLen,
 // MapSize, Alias and Memory count as one operation each, and every 256th
 // polls the context. Leave does not. A parser that calls the guard rarely

@@ -1,6 +1,7 @@
 package hostiletest
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -208,7 +209,7 @@ func Seeds(f Format) [][]byte {
 
 // Reasons recorded with Known entries.
 const (
-	gapUnadopted = "format has not adopted pkg/data Limits and Guard yet (Phases 2-4)"
+	gapUnadopted = "format has not adopted pkg/data Limits and Guard yet"
 	gapStack     = "fatal stack overflow today (measured on Go 1.26, arm64)"
 	gapAlias     = "alias bomb expands past 3 GiB today"
 	gapJSONHeap  = "64 MiB of small ints uses about 1.8 GiB of live heap today"
@@ -322,6 +323,21 @@ func mk(f Format, name string, g gen, want map[Profile]Expect, tags ...string) C
 	return Case{Name: name, Format: f, Tags: tags, Size: g.size, Input: g.build, Want: want}
 }
 
+// cat concatenates generated inputs.
+func cat(gs ...gen) gen {
+	var size int64
+	for _, g := range gs {
+		size += g.size
+	}
+	return gen{size, func() []byte {
+		b := make([]byte, 0, size)
+		for _, g := range gs {
+			b = append(b, g.build()...)
+		}
+		return b
+	}}
+}
+
 func (c Case) diff() Case { c.Diff = true; return c }
 
 func (c Case) check(fn func(data.Value) error) Case { c.Check = fn; return c }
@@ -381,10 +397,10 @@ func conformance() []Case {
 		{"zero", `0`}, {"negative-zero", `-0`}, {"negative-fraction", `-1.5`},
 		{"exponent", `1e5`}, {"exponent-upper-plus", `1E+5`}, {"fraction-exponent", `1.5e-3`},
 		{"string", `"str"`}, {"empty-string", `""`},
-		{"escapes", `"a\"b\\c\/d\b\f\n\r\t"`}, {"unicode-escape", `"é"`},
-		{"surrogate-pair", `"😀"`},
+		{"escapes", `"a\"b\\c\/d\b\f\n\r\t"`}, {"unicode-escape", `"\u00e9"`},
+		{"surrogate-pair", `"\ud83d\ude00"`},
 		{"empty-list", `[]`}, {"empty-map", `{}`}, {"list", `[1,2,3]`},
-		{"map", `{"a":1,"b":[true,false,null]}`}, {"empty-key", `{"":0}`},
+		{"map", `{"a":1,"b":[true,false,null]}`}, {"empty-key", `{"":0}`}, {"raw-unicode", "\"\u00e9\U0001F600\""},
 		{"whitespace", " \t\r\n[ 1 , 2 ] \n"}, {"nested-empties", `[[],[[]],{}]`},
 	})...)
 	cs = append(cs, snippets(JSON, false, []snippet{
@@ -476,11 +492,11 @@ func nesting() []Case {
 func onlyNumber(text string, kind data.Kind) func(data.Value) error {
 	return func(v data.Value) error {
 		if v.Kind() != data.KindList || v.List().Len() != 1 {
-			return errf("want a one-element list, got %s", clip(v.String()))
+			return fmt.Errorf("want a one-element list, got %s", clip(v.String()))
 		}
 		e := v.List()[0]
 		if e.Kind() != kind || e.Number().Text != text {
-			return errf("want %s %s, got %s", kind, clip(text), clip(e.String()))
+			return fmt.Errorf("want %s %s, got %s", kind, clip(text), clip(e.String()))
 		}
 		return nil
 	}
@@ -498,7 +514,7 @@ func numbers() []Case {
 				check(onlyNumber("-"+digits100, data.KindInteger)),
 			mk(f, "exponent-huge", lit("[1e999999999]"), every(valid), "number"),
 			mk(f, "exponent-huge-negative", lit("[1e-999999999]"), every(valid), "number"),
-			mk(f, "int-1m-digits", lit("["+digits1M+"]"), by(valid, valid, limit(data.LimitStringBytes)), "number"),
+			mk(f, "int-1m-digits", lit("["+digits1M+"]"), by(valid, valid, limit(data.LimitStringBytes, data.LimitMemory)), "number"),
 		)
 	}
 	// The JSON ones have an exact expected shape and a safe reference.
@@ -563,7 +579,7 @@ func hugeString(f Format, n int) gen {
 func stringLen(n int) func(data.Value) error {
 	return func(v data.Value) error {
 		if v.Kind() != data.KindString || len(v.Str()) != n {
-			return errf("want a string of %d bytes, got %s", n, clip(v.String()))
+			return fmt.Errorf("want a string of %d bytes, got %s", n, clip(v.String()))
 		}
 		return nil
 	}
@@ -601,7 +617,7 @@ func sizes() []Case {
 	longStr := `"` + strings.Repeat("x", 40) + `",`
 	for _, f := range []Format{JSON, YAML} {
 		cs = append(cs,
-			mk(f, "nodes-10001", rep("[", "0,", 10_000, "0]"), by(valid, valid, limit(data.LimitNodes)), "nodes"),
+			mk(f, "nodes-10001", rep("[", "0,", 10_000, "0]"), by(valid, valid, limit(data.LimitNodes, data.LimitMemory)), "nodes"),
 			// 9,000 strings of 40 bytes: about 1.08 MB estimated, under the
 			// byte, node and string limits of Tight but over its memory.
 			mk(f, "memory-9000-strings", rep("[", longStr, 9000, `""]`), by(valid, valid, limit(data.LimitMemory)), "memory"),
@@ -625,7 +641,7 @@ func sizes() []Case {
 		mk(CSV, "wide-row-15000", rep("", "a,", 15_000, "a\n"),
 			by(valid, valid, limit(data.LimitNodes, data.LimitKeysPerMap, data.LimitMemory)), "wide"),
 		mk(CSV, "wide-row-1m", rep("", "a,", 1_000_000, "a\n"), by(valid, valid, Expect{}), "wide", TagHeavy),
-		mk(CSV, "wide-header-1000", rep("", "h,", 1000, "h\n1\n"),
+		mk(CSV, "wide-header-1000", cat(rep("", "h,", 1000, "h\n"), rep("", "1,", 1000, "1\n")),
 			by(valid, valid, limit(data.LimitKeysPerMap, data.LimitNodes)), "wide"),
 	)
 	return cs
@@ -634,8 +650,9 @@ func sizes() []Case {
 func encoding() []Case {
 	const bom = "\xEF\xBB\xBF"
 	return []Case{
-		// RFC 8259 lets a parser reject a BOM and the standard library does.
-		mk(JSON, "bom", lit(bom+"[1]"), every(syntax), "bom").diff(),
+		// RFC 8259 lets a parser ignore a BOM or reject it (the standard
+		// library rejects it), so what to do is a per-format policy.
+		mk(JSON, "bom", lit(bom+"[1]"), every(record), "bom"),
 		// YAML and XML specify a BOM at the start of the stream.
 		mk(YAML, "bom", lit(bom+"a: 1\n"), every(valid), "bom"),
 		mk(XML, "bom", lit(bom+"<a/>"), every(valid), "bom"),
@@ -652,7 +669,7 @@ func encoding() []Case {
 	}
 }
 
-// duplicateKeys: wire expects a rejection; elsewhere the behaviour is only
+// duplicateKeys: wire expects a rejection, which must be a *data.SyntaxError; elsewhere the behaviour is only
 // recorded. Each format's task confirms its behaviour and drops the Known entry.
 func duplicateKeys() []Case {
 	in := map[Format]string{

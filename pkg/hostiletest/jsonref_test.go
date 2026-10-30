@@ -2,7 +2,6 @@ package hostiletest_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -38,15 +37,15 @@ type jsonParser struct {
 	stack   []frame
 }
 
-func parseJSON(_ context.Context, in []byte, p hostiletest.Profile, l data.Limits) (data.Value, error) {
-	g := data.NewGuard(l)
+func parseJSON(in []byte, req hostiletest.Request) (data.Value, error) {
+	g := data.NewGuard(req.Limits)
 	if err := g.Check(); err != nil {
 		return data.Value{}, err
 	}
 	if err := g.Bytes(len(in)); err != nil {
 		return data.Value{}, err
 	}
-	jp := &jsonParser{in: in, g: g, rejectD: p == hostiletest.Wire}
+	jp := &jsonParser{in: in, g: g, rejectD: req.Policy.RejectDuplicateKeys}
 	return jp.run()
 }
 
