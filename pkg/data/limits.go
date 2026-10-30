@@ -38,7 +38,10 @@ const (
 // A value equal to the limit is allowed; one more is an error.
 type Limits struct {
 	// MaxDepth is the maximum nesting depth of lists and maps. On by default.
-	MaxDepth int
+	// Turning it off removes the only protection against Go stack
+	// exhaustion in recursive parsers, which is a fatal, unrecoverable
+	// crash rather than an error. Only disable it for iterative parsers.
+	MaxDepth int64
 
 	// MaxBytes is the maximum number of input bytes consumed.
 	MaxBytes int64
@@ -47,18 +50,21 @@ type Limits struct {
 	MaxNodes int64
 
 	// MaxStringBytes is the maximum length in bytes of any single string,
-	// map key or number text.
-	MaxStringBytes int
+	// map key or number text. Parsers report each through Guard.String,
+	// Guard.Key or Guard.Number.
+	MaxStringBytes int64
 
 	// MaxKeysPerMap is the maximum number of keys in one map.
-	MaxKeysPerMap int
+	MaxKeysPerMap int64
 
 	// MaxAliasExpansion is the maximum number of nodes produced by YAML
 	// alias expansion. On by default.
 	MaxAliasExpansion int64
 
 	// MaxMemory is the budget for the estimated memory of the result, in
-	// bytes. See Guard for how the estimate is computed.
+	// bytes. The estimate is a heuristic that ignores slice-growth slack and
+	// Go map overhead; it can under-count the real heap by 10-30%, so leave
+	// headroom when sizing it against a hard memory limit. See Guard.
 	MaxMemory int64
 
 	// Context, when non-nil, cancels the parse. The guard polls it

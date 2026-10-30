@@ -1,6 +1,10 @@
 package data
 
-import "strconv"
+import (
+	"slices"
+	"strconv"
+	"strings"
+)
 
 // Kind identifies which type a Value holds.
 type Kind uint8
@@ -93,7 +97,8 @@ func (v Value) IsNull() bool { return v.kind == KindNull }
 // Bool returns the bool, or false for other kinds.
 func (v Value) Bool() bool { return v.kind == KindBool && v.b }
 
-// Number returns the number, or the zero Number for non-numeric kinds.
+// Number returns the number, or the zero Number for non-numeric kinds. The
+// zero Number is not valid (see Number): check Kind first.
 func (v Value) Number() Number {
 	if v.kind == KindInteger || v.kind == KindDecimal {
 		return Number{Text: v.text}
@@ -112,5 +117,70 @@ func (v Value) Str() string {
 // List returns the list, or nil for other kinds.
 func (v Value) List() List { return v.list }
 
-// Map returns the map, or nil for other kinds.
+// Map returns the map, or nil for other kinds. A nil *Map is safe to read
+// and behaves as empty.
 func (v Value) Map() *Map { return v.m }
+
+// Equal reports whether two values have the same kind and content. Numbers
+// compare by exact text, so 1 and 1.0 differ. Maps compare entries in order.
+func (v Value) Equal(o Value) bool {
+	if v.kind != o.kind {
+		return false
+	}
+	switch v.kind {
+	case KindNull:
+		return true
+	case KindBool:
+		return v.b == o.b
+	case KindList:
+		return slices.EqualFunc(v.list, o.list, Value.Equal)
+	case KindMap:
+		return slices.EqualFunc(v.m.Entries(), o.m.Entries(), func(a, b Entry) bool {
+			return a.Key == b.Key && a.Value.Equal(b.Value)
+		})
+	}
+	return v.text == o.text // string and numbers
+}
+
+// String returns a compact JSON-like rendering for debugging and test
+// failures. It is not a serializer: use the format packages to write data.
+// Use Str for the content of a string value.
+func (v Value) String() string {
+	var sb strings.Builder
+	v.debug(&sb)
+	return sb.String()
+}
+
+func (v Value) debug(sb *strings.Builder) {
+	switch v.kind {
+	case KindNull:
+		sb.WriteString("null")
+	case KindBool:
+		sb.WriteString(strconv.FormatBool(v.b))
+	case KindInteger, KindDecimal:
+		sb.WriteString(v.text)
+	case KindString:
+		sb.WriteString(strconv.Quote(v.text))
+	case KindList:
+		sb.WriteByte('[')
+		for i, e := range v.list {
+			if i > 0 {
+				sb.WriteByte(',')
+			}
+			e.debug(sb)
+		}
+		sb.WriteByte(']')
+	case KindMap:
+		sb.WriteByte('{')
+		for i := 0; i < v.m.Len(); i++ {
+			if i > 0 {
+				sb.WriteByte(',')
+			}
+			e := v.m.At(i)
+			sb.WriteString(strconv.Quote(e.Key))
+			sb.WriteByte(':')
+			e.Value.debug(sb)
+		}
+		sb.WriteByte('}')
+	}
+}

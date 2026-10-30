@@ -11,6 +11,10 @@ var ErrSyntax = errors.New("syntax error")
 // ErrLimit is matched by errors.Is for every *LimitError.
 var ErrLimit = errors.New("limit exceeded")
 
+// ErrNegativeAmount is returned by Guard methods given a negative size or
+// count. It signals a bug in the caller's arithmetic, not a limit breach.
+var ErrNegativeAmount = errors.New("negative amount")
+
 // Names of the limits reported in LimitError.Limit.
 const (
 	LimitDepth          = "depth"

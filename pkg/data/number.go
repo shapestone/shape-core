@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 // Errors returned by Number accessors.
@@ -21,6 +22,15 @@ var (
 	ErrNotInteger = errors.New("number is not an integer")
 )
 
+// DefaultMaxBigDigits is the most mantissa digits Big and BigInt accept.
+// math/big parsing is quadratic in the digit count (one million digits takes
+// about a second), so the default keeps a hostile number cheap. Use
+// BigWithMaxDigits or BigIntWithMaxDigits to choose another bound.
+const DefaultMaxBigDigits = 4096
+
+// maxErrText is the most bytes of number text quoted in an error message.
+const maxErrText = 32
+
 // maxBigExponent bounds the exponent accepted by Big, so that text such as
 // "1e999999999" cannot make math/big allocate gigabytes.
 const maxBigExponent = 1 << 16
@@ -32,6 +42,11 @@ const maxBigExponent = 1 << 16
 //
 // A Number is an Integer when its text has no '.' and no exponent, and a
 // Decimal otherwise, so "1.0", "1e3" and "-0.5" are all Decimal.
+//
+// The zero Number has empty text, which is not valid: Valid reports false,
+// every accessor returns ErrNumberSyntax, but Kind and IsInteger look only
+// for '.', 'e' and 'E' and so report Integer. Check Valid, or the kind of the
+// enclosing Value, before trusting them on a Number of unknown origin.
 type Number struct {
 	Text string
 }
@@ -39,7 +54,7 @@ type Number struct {
 // ParseNumber validates text against the JSON number grammar.
 func ParseNumber(text string) (Number, error) {
 	if !validNumber(text) {
-		return Number{}, fmt.Errorf("%w: %q", ErrNumberSyntax, text)
+		return Number{}, numErr(ErrNumberSyntax, text)
 	}
 	return Number{Text: text}, nil
 }
@@ -69,14 +84,14 @@ func (n Number) IsInteger() bool {
 // numbers and ErrNumberSyntax for invalid text. "-0" is 0.
 func (n Number) Int64() (int64, error) {
 	if !n.Valid() {
-		return 0, fmt.Errorf("%w: %q", ErrNumberSyntax, n.Text)
+		return 0, numErr(ErrNumberSyntax, n.Text)
 	}
 	if !n.IsInteger() {
-		return 0, fmt.Errorf("%w: %q", ErrNotInteger, n.Text)
+		return 0, numErr(ErrNotInteger, n.Text)
 	}
 	v, err := strconv.ParseInt(n.Text, 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("%w: %q", ErrNumberRange, n.Text)
+		return 0, numErr(ErrNumberRange, n.Text)
 	}
 	return v, nil
 }
@@ -86,44 +101,94 @@ func (n Number) Int64() (int64, error) {
 // an error; use Big for exact values.
 func (n Number) Float64() (float64, error) {
 	if !n.Valid() {
-		return 0, fmt.Errorf("%w: %q", ErrNumberSyntax, n.Text)
+		return 0, numErr(ErrNumberSyntax, n.Text)
 	}
 	v, err := strconv.ParseFloat(n.Text, 64)
 	if err != nil {
-		return v, fmt.Errorf("%w: %q", ErrNumberRange, n.Text)
+		return v, numErr(ErrNumberRange, n.Text)
 	}
 	return v, nil
 }
 
-// Big returns the exact value as a rational number. Exponents with a
-// magnitude above 65536 return an error wrapping ErrNumberRange.
+// Big returns the exact value as a rational number. It is
+// BigWithMaxDigits(DefaultMaxBigDigits).
 func (n Number) Big() (*big.Rat, error) {
+	return n.BigWithMaxDigits(DefaultMaxBigDigits)
+}
+
+// BigWithMaxDigits returns the exact value as a rational number. Text with
+// more than maxDigits mantissa digits, or an exponent with a magnitude above
+// 65536, returns an error wrapping ErrNumberRange; so does any text math/big
+// refuses. The bounds limit CPU and memory: even "1e65536" becomes a
+// roughly 27 KB Rat from 7 bytes of text.
+func (n Number) BigWithMaxDigits(maxDigits int) (*big.Rat, error) {
 	if !n.Valid() {
-		return nil, fmt.Errorf("%w: %q", ErrNumberSyntax, n.Text)
+		return nil, numErr(ErrNumberSyntax, n.Text)
+	}
+	if mantissaDigits(n.Text) > maxDigits {
+		return nil, numErr(ErrNumberRange, n.Text)
 	}
 	if exp := exponent(n.Text); exp > maxBigExponent || exp < -maxBigExponent {
-		return nil, fmt.Errorf("%w: %q", ErrNumberRange, n.Text)
+		return nil, numErr(ErrNumberRange, n.Text)
 	}
 	r, ok := new(big.Rat).SetString(n.Text)
-	if !ok {
-		return nil, fmt.Errorf("%w: %q", ErrNumberSyntax, n.Text)
+	if !ok { // text is valid, so math/big refused it for size
+		return nil, numErr(ErrNumberRange, n.Text)
 	}
 	return r, nil
 }
 
-// BigInt returns the exact value of an Integer number.
+// BigInt returns the exact value of an Integer number. It is
+// BigIntWithMaxDigits(DefaultMaxBigDigits).
 func (n Number) BigInt() (*big.Int, error) {
+	return n.BigIntWithMaxDigits(DefaultMaxBigDigits)
+}
+
+// BigIntWithMaxDigits returns the exact value of an Integer number, or an
+// error wrapping ErrNumberRange if it has more than maxDigits digits.
+func (n Number) BigIntWithMaxDigits(maxDigits int) (*big.Int, error) {
 	if !n.Valid() {
-		return nil, fmt.Errorf("%w: %q", ErrNumberSyntax, n.Text)
+		return nil, numErr(ErrNumberSyntax, n.Text)
 	}
 	if !n.IsInteger() {
-		return nil, fmt.Errorf("%w: %q", ErrNotInteger, n.Text)
+		return nil, numErr(ErrNotInteger, n.Text)
+	}
+	if mantissaDigits(n.Text) > maxDigits {
+		return nil, numErr(ErrNumberRange, n.Text)
 	}
 	v, ok := new(big.Int).SetString(n.Text, 10)
 	if !ok {
-		return nil, fmt.Errorf("%w: %q", ErrNumberSyntax, n.Text)
+		return nil, numErr(ErrNumberSyntax, n.Text)
 	}
 	return v, nil
+}
+
+// numErr wraps sentinel with the number text, truncated so that a huge
+// invalid number cannot make a huge error message.
+func numErr(sentinel error, text string) error {
+	if len(text) > maxErrText {
+		cut := maxErrText
+		for cut > 0 && !utf8.RuneStart(text[cut]) {
+			cut--
+		}
+		return fmt.Errorf("%w: %q (truncated)", sentinel, text[:cut])
+	}
+	return fmt.Errorf("%w: %q", sentinel, text)
+}
+
+// mantissaDigits counts the digits before any exponent.
+func mantissaDigits(s string) int {
+	d := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == 'e' || c == 'E' {
+			break
+		}
+		if c >= '0' && c <= '9' {
+			d++
+		}
+	}
+	return d
 }
 
 // exponent returns the exponent of valid number text, clamped to ±MaxInt32

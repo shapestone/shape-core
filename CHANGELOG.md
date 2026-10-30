@@ -13,9 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pkg/data`: `Limits` with secure defaults (depth 10,000 and YAML alias expansion on, all other limits opt-in, `NoLimit` to disable) (#11)
 - `pkg/data`: `Guard` enforcing depth, nodes, bytes, string/key size, keys per map, alias expansion, estimated memory and context cancellation (#12)
 - `pkg/data`: typed errors `SyntaxError` and `LimitError` with `ErrSyntax` and `ErrLimit` sentinels; context errors pass through unwrapped (#13)
+- `pkg/data`: `Guard.CheckStringLen` (non-charging length check for streaming parsers), `Guard.Number`, `ErrNegativeAmount`, `Map.At`, `Value.Equal`, `Value.String`, and `Number.BigWithMaxDigits`/`BigIntWithMaxDigits` with `DefaultMaxBigDigits`
 - Documentation: renamed `shape-props` references to `shape-properties`
 
 ### Changed
+- `pkg/data`: `Limits` integer fields are all `int64`; `Guard` counters saturate and reject negative amounts instead of wrapping or crediting the budget; `Enter` leaves the depth unchanged on a context error; `MapSize` and `Memory` poll the context; `Map` read methods are nil-safe, `Map.Entries` returns a copy and `NewMap` clamps and caps its capacity; `Number.Big`/`BigInt` cap mantissa digits at 4096 and report size refusals as `ErrNumberRange`; number errors quote at most 32 bytes
 - CI: migrated `.golangci.yml` to golangci-lint v2 format
 - CI: upgraded `golangci-lint-action` to v9 for Go 1.25 support
 - CI: updated Go version to 1.25 in test and lint jobs

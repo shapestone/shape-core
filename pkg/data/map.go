@@ -1,6 +1,9 @@
 package data
 
-import "iter"
+import (
+	"iter"
+	"slices"
+)
 
 // indexThreshold is the entry count at which a Map builds its lookup index.
 // Below it a linear scan is faster and allocates nothing.
@@ -12,34 +15,61 @@ type Entry struct {
 	Value Value
 }
 
+// maxPrealloc caps the capacity NewMap reserves, so a hostile declared
+// length cannot force a large uncharged allocation.
+const maxPrealloc = 1024
+
 // Map is an ordered map from string keys to values. Entries keep insertion
 // order. Duplicate-key policy belongs to each format, so Map offers
 // primitives to apply one: Has and Index to check, Append to keep
 // duplicates, Add for first-wins and Set for last-wins.
 //
-// When duplicates were appended, lookups (Get, Index, Has) find the first
-// entry with the key. A Map is not safe for concurrent use. The zero Map is
-// empty and ready to use.
+// When duplicates were appended, lookups (Get, Index, Has) and Set act on
+// the first entry with the key. The read methods (Len, Entries, At, All,
+// Index, Has, Get) are safe on a nil *Map and see it as empty, so
+// Value.Map() can be used on any value. A Map is not safe for concurrent
+// use. The zero Map is empty and ready to use.
 type Map struct {
 	entries []Entry
 	index   map[string]int // key -> position of its first entry; nil until large
 }
 
-// NewMap returns an empty map with room for capacity entries.
+// NewMap returns an empty map with room for capacity entries. Negative
+// capacity is treated as 0, and the reservation is capped at 1024 entries;
+// the map still grows as needed. The reservation is not charged to a Guard.
 func NewMap(capacity int) *Map {
+	capacity = max(0, min(capacity, maxPrealloc))
 	return &Map{entries: make([]Entry, 0, capacity)}
 }
 
 // Len returns the number of entries, counting appended duplicates.
-func (m *Map) Len() int { return len(m.entries) }
+func (m *Map) Len() int {
+	if m == nil {
+		return 0
+	}
+	return len(m.entries)
+}
 
-// Entries returns the entries in order. The slice is shared with the map:
-// callers may change values but must not change keys or length.
-func (m *Map) Entries() []Entry { return m.entries }
+// Entries returns a copy of the entries in order. Because it is a copy,
+// changing it cannot corrupt the key index; use At or All to read without
+// copying.
+func (m *Map) Entries() []Entry {
+	if m == nil {
+		return nil
+	}
+	return slices.Clone(m.entries)
+}
+
+// At returns the i-th entry in insertion order. It panics if i is out of
+// range, like a slice index.
+func (m *Map) At(i int) Entry { return m.entries[i] }
 
 // All iterates over the entries in order.
 func (m *Map) All() iter.Seq2[string, Value] {
 	return func(yield func(string, Value) bool) {
+		if m == nil {
+			return
+		}
 		for _, e := range m.entries {
 			if !yield(e.Key, e.Value) {
 				return
@@ -50,6 +80,9 @@ func (m *Map) All() iter.Seq2[string, Value] {
 
 // Index returns the position of the first entry with key, or -1.
 func (m *Map) Index(key string) int {
+	if m == nil {
+		return -1
+	}
 	if m.index != nil {
 		if i, ok := m.index[key]; ok {
 			return i
@@ -98,9 +131,10 @@ func (m *Map) Add(key string, v Value) bool {
 	return true
 }
 
-// Set replaces the value of an existing key in place, keeping its original
-// position (last wins), or appends the entry. It reports whether an existing
-// entry was replaced.
+// Set replaces the value of the existing entry for key in place, keeping its
+// position, or appends the entry (last value wins for keys added with Set
+// or Add). If duplicates were appended, only the first entry is replaced.
+// It reports whether an existing entry was replaced.
 func (m *Map) Set(key string, v Value) bool {
 	if i := m.Index(key); i >= 0 {
 		m.entries[i].Value = v
