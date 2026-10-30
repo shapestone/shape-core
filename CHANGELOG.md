@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pkg/data`: `Guard` enforcing depth, nodes, bytes, string/key size, keys per map, alias expansion, estimated memory and context cancellation (#12)
 - `pkg/data`: typed errors `SyntaxError` and `LimitError` with `ErrSyntax` and `ErrLimit` sentinels; context errors pass through unwrapped (#13)
 - `pkg/data`: `Guard.CheckStringLen` (non-charging length check for streaming parsers), `Guard.Number`, `ErrNegativeAmount`, `Map.At`, `Value.Equal`, `Value.String`, and `Number.BigWithMaxDigits`/`BigIntWithMaxDigits` with `DefaultMaxBigDigits`, and `NewMapTrusted` (uncapped preallocation)
+- `pkg/hostiletest`: shared hostile-input corpus and test harness for the format modules (#15). Cases are per format, built by generators (no large files), and state the expected verdict (valid, syntax error, or a named limit) under the Default, Wire (64 MiB, 1 GiB, depth 10,000, context) and Tight limit profiles. Covers deep nesting, 100-digit integers, huge exponents, alias bombs, huge strings and fields, many keys, wide CSV rows, byte and memory budgets, BOM, invalid UTF-8, duplicate keys, and XML entity expansion and DOCTYPE
+- `pkg/hostiletest`: `Run` runs a format's `ParseFunc` over the corpus as subtests, with an optional differential comparison against a reference (`WithReference`, used for `encoding/json` in tests only). Cases that may crash the process run in a re-executed test binary; cases expected to fail until a format adopts `pkg/data` carry `Known` reasons and are skipped while they fail and reported once they pass. `-short`, `HOSTILETEST_STRICT` and `HOSTILETEST_MAXSIZE` keep CI fast
 - Documentation: renamed `shape-props` references to `shape-properties`
 
 ### Changed
