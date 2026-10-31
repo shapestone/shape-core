@@ -55,7 +55,10 @@ func TestLiveHeapWithinGuardEstimate(t *testing.T) {
 	var before, after runtime.MemStats
 	runtime.GC()
 	runtime.ReadMemStats(&before)
-	v, g, err := parseJSONGuard(in, req)
+	// Grow is off: it refuses a parse whose growth peak passes the budget,
+	// which stops this one before it gets near 64 MiB. The check here is the
+	// live heap of a result that does fill the budget, not the peak.
+	v, g, err := parseJSONWith(in, req, true)
 	if err != nil {
 		t.Fatal(err)
 	}

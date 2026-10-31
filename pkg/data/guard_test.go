@@ -254,3 +254,67 @@ func TestResolve(t *testing.T) {
 		}
 	}
 }
+
+func TestGrow(t *testing.T) {
+	g := NewGuard(Limits{MaxMemory: 1000})
+	if err := g.Memory(400); err != nil {
+		t.Fatal(err)
+	}
+	// 400 held + 500 new array fits; the transient charge is credited back.
+	if err := g.Grow(4, 10, 50); err != nil {
+		t.Fatal(err)
+	}
+	if g.MemoryUsed() != 400 || g.PeakMemory() != 900 {
+		t.Errorf("used %d peak %d, want 400 and 900", g.MemoryUsed(), g.PeakMemory())
+	}
+	// 400 + 650 is over: LimitError, nothing changes.
+	err := g.Grow(10, 13, 50)
+	var le *LimitError
+	if !errors.As(err, &le) || le.Limit != LimitMemory || le.Max != 1000 || le.Got != 1050 {
+		t.Fatalf("err = %v, want a memory LimitError with Got 1050", err)
+	}
+	if g.MemoryUsed() != 400 || g.PeakMemory() != 900 {
+		t.Errorf("a failed Grow changed the guard: used %d peak %d", g.MemoryUsed(), g.PeakMemory())
+	}
+	// Shrinks are accepted and checked the same way.
+	if err := g.Grow(10, 2, 50); err != nil {
+		t.Errorf("shrink: %v", err)
+	}
+}
+
+func TestGrowNegativeAndOverflow(t *testing.T) {
+	g := NewGuard(Limits{MaxMemory: 1000})
+	for _, c := range [][3]int64{{-1, 1, 1}, {1, -1, 1}, {1, 1, -1}} {
+		if err := g.Grow(int(c[0]), int(c[1]), c[2]); !errors.Is(err, ErrNegativeAmount) {
+			t.Errorf("Grow%v = %v, want ErrNegativeAmount", c, err)
+		}
+	}
+	var le *LimitError
+	if err := g.Grow(1, math.MaxInt32, math.MaxInt64); !errors.As(err, &le) || le.Got != math.MaxInt64 {
+		t.Errorf("overflow: err = %v, want a LimitError saturated at MaxInt64", err)
+	}
+	// Unlimited memory: a huge array is fine and does not overflow.
+	u := NewGuard(Limits{MaxMemory: -1})
+	if err := u.Memory(math.MaxInt64 - 1000); err != nil {
+		t.Fatal(err)
+	}
+	if err := u.Grow(0, 1, 100); err != nil {
+		t.Errorf("unlimited: %v", err)
+	}
+	if u.PeakMemory() != math.MaxInt64-900 {
+		t.Errorf("peak %d", u.PeakMemory())
+	}
+}
+
+func TestGrowPollsContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	g := NewGuard(Limits{Context: ctx})
+	cancel()
+	var err error
+	for i := 0; i < 256 && err == nil; i++ {
+		err = g.Grow(1, 2, 1)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Errorf("err = %v, want context.Canceled by the 256th call", err)
+	}
+}

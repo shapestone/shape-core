@@ -34,6 +34,7 @@ type jsonParser struct {
 	pos     int
 	g       *data.Guard
 	rejectD bool // reject duplicate keys
+	noGrow  bool // skip Guard.Grow, for the measurement test
 	stack   []frame
 }
 
@@ -45,6 +46,12 @@ func parseJSON(in []byte, req hostiletest.Request) (data.Value, error) {
 // parseJSONGuard is parseJSON that also returns the guard, so a test can read
 // its memory estimate.
 func parseJSONGuard(in []byte, req hostiletest.Request) (data.Value, *data.Guard, error) {
+	return parseJSONWith(in, req, false)
+}
+
+// parseJSONWith is parseJSONGuard with the Grow checks optionally switched
+// off, to measure what they save.
+func parseJSONWith(in []byte, req hostiletest.Request, noGrow bool) (data.Value, *data.Guard, error) {
 	g := data.NewGuard(req.Limits)
 	if err := g.Check(); err != nil {
 		return data.Value{}, g, err
@@ -52,7 +59,7 @@ func parseJSONGuard(in []byte, req hostiletest.Request) (data.Value, *data.Guard
 	if err := g.Bytes(len(in)); err != nil {
 		return data.Value{}, g, err
 	}
-	jp := &jsonParser{in: in, g: g, rejectD: req.Policy.RejectDuplicateKeys}
+	jp := &jsonParser{in: in, g: g, rejectD: req.Policy.RejectDuplicateKeys, noGrow: noGrow}
 	v, err := jp.run()
 	return v, g, err
 }
@@ -139,6 +146,11 @@ func (p *jsonParser) run() (data.Value, error) {
 					return data.Value{}, err
 				}
 			} else {
+				if !p.noGrow && len(top.list) == cap(top.list) {
+					if err := p.g.Grow(cap(top.list), growCap(cap(top.list)), listSlotBytes); err != nil {
+						return data.Value{}, err
+					}
+				}
 				top.list = append(top.list, v)
 			}
 			p.ws()
@@ -182,8 +194,33 @@ func (p *jsonParser) addEntry(f *frame, v data.Value) error {
 	if p.rejectD && f.m.Has(f.key) {
 		return p.fail("duplicate key " + clipKey(f.key))
 	}
+	if !p.noGrow && f.m.Len() == f.m.Cap() {
+		if err := p.g.Grow(f.m.Cap(), growCap(f.m.Cap()), entrySlotBytes); err != nil {
+			return err
+		}
+	}
 	f.m.Append(f.key, v)
 	return p.g.MapSize(f.m.Len())
+}
+
+// Slot sizes in the backing arrays that Node and Key already charge for: a
+// List slot is a Value, a Map slot is an Entry (a string header and a Value).
+const (
+	listSlotBytes  = data.EstNodeBytes
+	entrySlotBytes = 16 + data.EstNodeBytes
+)
+
+// growCap predicts the capacity append gives a full slice of capacity c: it
+// doubles below 256 and then grows by about a quarter. Size-class rounding is
+// ignored.
+func growCap(c int) int {
+	switch {
+	case c < 4:
+		return 4
+	case c < 256:
+		return 2 * c
+	}
+	return c + (c+3*256)/4
 }
 
 func clipKey(k string) string {
