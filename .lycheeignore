@@ -1,2 +1,5 @@
 # Exclude URLs that are flaky or known to have connectivity issues from CI
 https://www.conventionalcommits.org
+
+# CHANGELOG compare links point at release tags that do not exist until the release is tagged
+^https://github\.com/shapestone/shape-core/compare/
