@@ -43,12 +43,17 @@ const pollMask = 255
 // Peak memory: the estimate counts what the finished result holds, not what
 // the parse touches along the way. While a list grows by append, the old and
 // the new slice exist together, and the garbage left behind is not collected
-// at once, so the peak heap can reach about 2.5 times MaxMemory (measured on a
-// Guard-limited parse of small integers). A client with a hard memory ceiling
-// should set MaxMemory to at most a third of it.
+// at once. Without Grow the peak heap reached 1.8 to 2.1 times MaxMemory
+// (measured at 256 MiB on small integers and on one large object; 2.5 times
+// at 1 GiB). A parser that calls Grow before every append that reallocates
+// peaked at 0.9 and 1.1 times MaxMemory, because it stops before the
+// allocation that would pass the limit. The price is that it stops with the
+// estimate below MaxMemory, at about half of it for a list. A client with a
+// hard memory ceiling should set MaxMemory to at most half of it for parsers
+// that use Grow and a third of it for those that do not.
 //
 // Context polling: Enter, Node, Bytes, String, Key, CheckStringLen,
-// MapSize, Alias and Memory count as one operation each, and every 256th
+// MapSize, Alias, Memory and Grow count as one operation each, and every 256th
 // polls the context. Leave does not. A parser that calls the guard rarely
 // per unit of work (for example CSV rows with large fields) should call
 // Check at coarse boundaries.
@@ -80,6 +85,7 @@ type Guard struct {
 
 	mem    int64
 	maxMem int64
+	peak   int64 // highest transient estimate seen by Grow
 }
 
 // NewGuard returns a guard for one parse, applying the defaults of Limits.
@@ -272,6 +278,58 @@ func (g *Guard) Memory(n int64) error {
 		return err
 	}
 	return g.tick()
+}
+
+// Grow checks the transient cost of growing a backing array from oldCap to
+// newCap elements of elemBytes each. Call it just before an append that will
+// reallocate, so the parse stops before the old and the new array are alive
+// together and the heap passes MaxMemory.
+//
+// The check is that the current estimate plus the whole new array, newCap *
+// elemBytes, stays within MaxMemory. The estimate already holds the old
+// array, because the per-item charge (Node, Key) covers each slot. On
+// success the transient charge is credited back at once, so MemoryUsed is
+// unchanged and the new, still empty slots are charged as they are filled.
+// elemBytes should be a slot size that the per-item charge covers; a parser
+// whose per-item charge does not cover its slot adds the difference with
+// Memory. oldCap is validated but does not change the amount: a shrink
+// (newCap < oldCap) is accepted and checked the same way.
+//
+// Negative arguments are an error. A failed check does not change the guard.
+// PeakMemory reports the highest transient estimate Grow accepted.
+func (g *Guard) Grow(oldCap, newCap int, elemBytes int64) error {
+	switch {
+	case oldCap < 0:
+		return negative(LimitMemory, int64(oldCap))
+	case newCap < 0:
+		return negative(LimitMemory, int64(newCap))
+	case elemBytes < 0:
+		return negative(LimitMemory, elemBytes)
+	}
+	var arr int64 = math.MaxInt64 // newCap * elemBytes, saturated
+	if elemBytes == 0 || int64(newCap) <= math.MaxInt64/elemBytes {
+		arr = int64(newCap) * elemBytes
+	}
+	if arr > g.maxMem-g.mem {
+		got := g.mem + arr
+		if got < g.mem { // overflowed
+			got = math.MaxInt64
+		}
+		return exceeded(LimitMemory, g.maxMem, got)
+	}
+	if p := g.mem + arr; p > g.peak {
+		g.peak = p
+	}
+	return g.tick()
+}
+
+// PeakMemory returns the highest estimate reached: the larger of MemoryUsed
+// and the highest transient estimate that Grow accepted.
+func (g *Guard) PeakMemory() int64 {
+	if g.peak > g.mem {
+		return g.peak
+	}
+	return g.mem
 }
 
 // MemoryUsed returns the estimated memory charged so far.

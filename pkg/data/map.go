@@ -59,6 +59,15 @@ func (m *Map) Len() int {
 	return len(m.entries)
 }
 
+// Cap returns the number of entries the map holds before Append reallocates.
+// A builder uses it with Guard.Grow to check a growth before it happens.
+func (m *Map) Cap() int {
+	if m == nil {
+		return 0
+	}
+	return cap(m.entries)
+}
+
 // Entries returns a copy of the entries in order. Because it is a copy,
 // changing it cannot corrupt the key index, but every call allocates: do not
 // call it inside a loop. Use Len with At, or All, to read without copying.
