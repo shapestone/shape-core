@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.10.0] - 2026-10-31
+
 ### Added
 - `pkg/data`: `Guard.Grow(oldCap, newCap, elemBytes)` checks the transient cost of growing a backing array (the current estimate plus the whole new array, while the old one is still alive) against `MaxMemory` and credits it back, so `MemoryUsed` is unchanged; `Guard.PeakMemory` reports the highest estimate reached; `Map.Cap`. A parser that calls `Grow` before each reallocating append peaked at 0.9x (list of small integers) and 1.1x (large object) `MaxMemory` instead of 2.1x and 1.8x. The reference JSON parser in `pkg/hostiletest` uses it, with tests that measure the peak
 - `pkg/data`: shared value model for format parsers: `Kind`, `Value`, `List` and an insertion-ordered `Map` with primitives for per-format duplicate-key policy (#10)
@@ -21,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documentation: renamed `shape-props` references to `shape-properties`
 
 ### Changed
+- Go 1.27: `go.mod` now declares `go 1.27` (was `go 1.23` in v0.9.3), and the CI, CodeQL, benchmark and release workflows, the `custom-dsl` example module and the docs (README, CONTRIBUTING, local setup, Go version policy) name Go 1.27. Tests, `go vet` and golangci-lint pass with Go 1.27.3; no code changes were needed
 - `pkg/data`: documented that the peak heap during a parse can reach about 2 to 2.5 times `MaxMemory` without `Guard.Grow` and about 1 to 1.1 times with it (see Added) (append growth plus uncollected garbage), so a client with a hard memory ceiling should set `MaxMemory` to at most a third of it and that the result estimate is approximate (81 bytes charged where a small integer really takes about 56), replacing the "under-counts by 10-30%" note (`Limits.MaxMemory` and `Guard` docs only; no code change)
 - `pkg/tokenizer`: stream identity check in `Match` now uses a stdlib pointer token instead of `github.com/google/uuid`; behaviour, including the "trying to match two different streams" panic, is unchanged (#14)
 - `pkg/data`: `Limits` integer fields are all `int64`; `Guard` counters saturate and reject negative amounts instead of wrapping or crediting the budget; `Enter` leaves the depth unchanged on a context error; `MapSize` and `Memory` poll the context; `Map` read methods are nil-safe, `Map.Entries` returns a copy and `NewMap` clamps and caps its capacity; `Number.Big`/`BigInt` cap mantissa digits at 4096 and report size refusals as `ErrNumberRange`; number errors quote at most 32 bytes; `Guard.String`/`Key` charge memory atomically; `Big` ignores leading zeros when counting digits but bounds the effective exponent; `Value.Equal` no longer copies map entries
@@ -244,8 +249,10 @@ Copyright © 2020–2025 Shapestone
 
 ---
 
-[Unreleased]: https://github.com/shapestone/shape-core/compare/v0.9.3...HEAD
+[Unreleased]: https://github.com/shapestone/shape-core/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/shapestone/shape-core/compare/v0.9.3...v0.10.0
 [0.9.3]: https://github.com/shapestone/shape-core/compare/v0.9.2...v0.9.3
 [0.9.2]: https://github.com/shapestone/shape-core/compare/v0.9.1...v0.9.2
 [0.9.1]: https://github.com/shapestone/shape-core/compare/v0.9.0...v0.9.1
-[0.9.0]: https://github.com/shapestone/shape-core/releases/tag/v0.9.0
+[0.9.0]: https://github.com/shapestone/shape-core/compare/v0.6.0...v0.9.0
+[0.6.0]: https://github.com/shapestone/shape-core/releases/tag/v0.6.0

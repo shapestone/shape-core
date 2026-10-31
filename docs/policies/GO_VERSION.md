@@ -1,8 +1,8 @@
 # Go Version Policy
 
-## Current Standard: Go 1.23
+## Current Standard: Go 1.27
 
-All repositories in the Shape ecosystem use **Go 1.23** as the minimum required version.
+All repositories in the Shape ecosystem use **Go 1.27** as the minimum required version.
 
 ## Affected Repositories
 
@@ -16,13 +16,13 @@ All repositories in the Shape ecosystem use **Go 1.23** as the minimum required 
 ## Rationale
 
 ### 1. Stability
-Go 1.23 is a stable, production-ready release from the Go team with:
+Go 1.27 is a stable, production-ready release from the Go team with:
 - Proven reliability in production environments
 - Complete documentation and community support
 - Stable API guarantees per Go's compatibility promise
 
 ### 2. CI/CD Support
-Go 1.23 is fully supported by:
+Go 1.27 is fully supported by:
 - GitHub Actions (`actions/setup-go@v5`)
 - golangci-lint and other Go tooling
 - Docker official Go images
@@ -80,16 +80,16 @@ All `.github/workflows/*.yml` files must use:
 - name: Set up Go
   uses: actions/setup-go@v5
   with:
-    go-version: '1.23'
+    go-version: '1.27'
     check-latest: true
 ```
 
-The `check-latest: true` flag ensures the latest patch version (e.g., 1.23.4) is used.
+The `check-latest: true` flag ensures the latest patch version (e.g., 1.27.3) is used.
 
 ## Local Development
 
 ### Required Version
-Developers must use **Go 1.23.x or later**.
+Developers must use **Go 1.27.x or later**.
 
 ### Installation
 Download from the official Go website:
@@ -98,14 +98,14 @@ https://go.dev/dl/
 ### Verification
 ```bash
 go version
-# Should show: go version go1.23.x ...
+# Should show: go version go1.27.x ...
 ```
 
 ### IDE Configuration
-Configure your IDE to use Go 1.23:
+Configure your IDE to use Go 1.27:
 - **VS Code**: Set `"go.goroot"` in settings
 - **GoLand**: File → Settings → Go → GOROOT
-- **vim-go**: Set `g:go_version_warning = 0` if using 1.23+
+- **vim-go**: Set `g:go_version_warning = 0` if using 1.27+
 
 ## go.mod Requirements
 
@@ -114,10 +114,10 @@ All `go.mod` files must specify:
 ```go
 module github.com/shapestone/shape-[project]
 
-go 1.23
+go 1.27
 ```
 
-Do not specify patch versions (e.g., `go 1.23.4`) - only major.minor.
+Do not specify patch versions (e.g., `go 1.27.3`) - only major.minor.
 
 ## Exceptions
 
@@ -130,7 +130,7 @@ Do not use pre-release Go versions (rc1, beta, etc.) in:
 Experimental branches may use pre-release versions for testing.
 
 ### Older Versions
-Do not support Go versions older than 1.23 as:
+Do not support Go versions older than 1.27 as:
 - Shape uses modern Go features
 - Older versions lack critical security fixes
 - Tooling may not support them
@@ -141,15 +141,15 @@ When upgrading from a previous Go version:
 
 ### 1. Update go.mod
 ```bash
-# Change go 1.XX to go 1.23
-sed -i 's/go 1\..*/go 1.23/' go.mod
+# Change go 1.XX to go 1.27
+sed -i 's/go 1\..*/go 1.27/' go.mod
 go mod tidy
 ```
 
 ### 2. Update CI/CD
 Update all workflow files:
 ```yaml
-go-version: '1.23'
+go-version: '1.27'
 ```
 
 ### 3. Test Locally
@@ -169,6 +169,7 @@ Update any version references in:
 
 | Version | Start Date | Rationale |
 |---------|-----------|-----------|
+| 1.27    | 2026-10   | Move to current Go release (shape-core v0.10.0) |
 | 1.23    | 2024-12   | Ecosystem standardization, CI/CD compatibility |
 
 ## References

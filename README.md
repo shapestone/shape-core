@@ -374,7 +374,7 @@ All development workflows use `make`. Run `make help` to list all targets.
 
 ## Requirements
 
-- Go 1.25 or later
+- Go 1.27 or later
 - No external runtime dependencies (standard library only)
 
 ## License

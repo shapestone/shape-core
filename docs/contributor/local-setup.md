@@ -6,7 +6,7 @@ This guide will help you set up your local development environment for contribut
 
 ### Required
 
-- **Go 1.25 or later** - [Download Go](https://golang.org/dl/)
+- **Go 1.27 or later** - [Download Go](https://golang.org/dl/)
 - **Git** - [Download Git](https://git-scm.com/downloads)
 
 ### Recommended
@@ -33,7 +33,7 @@ git remote add upstream https://github.com/shapestone/shape-core.git
 
 ```bash
 go version
-# Should output: go version go1.25 or later
+# Should output: go version go1.27 or later
 ```
 
 ### 3. Install Dependencies

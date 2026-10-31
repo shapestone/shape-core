@@ -1,6 +1,6 @@
 module github.com/shapestone/shape-core/examples/custom-dsl
 
-go 1.25
+go 1.27
 
 require github.com/shapestone/shape-core v0.9.3
 

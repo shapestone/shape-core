@@ -95,11 +95,11 @@ tok := tokenizer.NewTokenizer(
 
 ### Prerequisites
 
-**Go Version:** Shape requires **Go 1.25 or later**. See the [Go Version Policy](docs/policies/GO_VERSION.md) for details.
+**Go Version:** Shape requires **Go 1.27 or later**. See the [Go Version Policy](docs/policies/GO_VERSION.md) for details.
 
 ```bash
 # Verify your Go version
-go version  # Should show go1.25.x or later
+go version  # Should show go1.27.x or later
 ```
 
 See [Local Setup Guide](docs/contributor/local-setup.md) for detailed instructions.
