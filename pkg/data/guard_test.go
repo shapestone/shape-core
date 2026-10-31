@@ -318,3 +318,41 @@ func TestGrowPollsContext(t *testing.T) {
 		t.Errorf("err = %v, want context.Canceled by the 256th call", err)
 	}
 }
+
+func TestGrowOverflowWithCharge(t *testing.T) {
+	// A charged estimate plus a saturated array overflows the sum: Got must
+	// saturate, not wrap negative.
+	g := NewGuard(Limits{MaxMemory: 1000})
+	if err := g.Memory(100); err != nil {
+		t.Fatal(err)
+	}
+	var le *LimitError
+	if err := g.Grow(1, math.MaxInt32, math.MaxInt64); !errors.As(err, &le) || le.Got != math.MaxInt64 {
+		t.Errorf("err = %v, want a LimitError saturated at MaxInt64", err)
+	}
+}
+
+func TestPeakMemory(t *testing.T) {
+	g := NewGuard(Limits{MaxMemory: 1000})
+	if g.PeakMemory() != 0 {
+		t.Errorf("fresh guard peak = %d", g.PeakMemory())
+	}
+	if err := g.Memory(100); err != nil {
+		t.Fatal(err)
+	}
+	if g.PeakMemory() != 100 { // no Grow yet: the peak is the estimate
+		t.Errorf("peak = %d, want 100", g.PeakMemory())
+	}
+	if err := g.Grow(1, 4, 100); err != nil { // transient 500
+		t.Fatal(err)
+	}
+	if g.PeakMemory() != 500 {
+		t.Errorf("peak = %d, want 500", g.PeakMemory())
+	}
+	if err := g.Memory(600); err != nil { // estimate passes the old transient peak
+		t.Fatal(err)
+	}
+	if g.PeakMemory() != 700 || g.MemoryUsed() != 700 {
+		t.Errorf("peak %d used %d, want 700 and 700", g.PeakMemory(), g.MemoryUsed())
+	}
+}
