@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Release workflow: the "Run benchmarks" step ran `go test -bench=. ./pkg/shape/`, a package that no longer exists, so the Release workflow failed for v0.9.3 and v0.10.0. It now runs `./...` with `-benchtime=100ms -run='^$'` (no repeated tests) (#58)
+
 ---
 
 ## [0.10.0] - 2026-10-31

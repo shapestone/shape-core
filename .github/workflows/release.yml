@@ -27,7 +27,7 @@ jobs:
         run: go test -v -race ./...
 
       - name: Run benchmarks
-        run: go test -bench=. -benchmem ./pkg/shape/
+        run: go test -bench=. -benchmem -benchtime=100ms -run='^$' ./...
 
   release:
     name: Create Release
